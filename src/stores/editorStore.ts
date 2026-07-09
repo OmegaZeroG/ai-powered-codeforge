@@ -3,12 +3,17 @@ import { Language, SubmitResponse } from "@/types"
 
 interface EditorState {
   problemId: string | null
+  problemStarterCode: Partial<Record<Language, string>> | null
   code: string
   language: Language
   isRunning: boolean
   result: SubmitResponse | null
   fontSize: number
-  setProblemId: (problemId: string | null) => void
+  setProblem: (
+    problemId: string,
+    starterCode: Partial<Record<Language, string>> | null
+  ) => void
+  clearProblem: () => void
   setCode: (code: string) => void
   setLanguage: (language: Language) => void
   setResult: (result: SubmitResponse | null) => void
@@ -24,18 +29,38 @@ const DEFAULT_CODE: Record<Language, string> = {
   go: `// Go\npackage main\nimport "fmt"\nfunc main() {\n  fmt.Println("Hello, CodeForge!")\n}`,
 }
 
-export const useEditorStore = create<EditorState>((set) => ({
+export const useEditorStore = create<EditorState>((set, get) => ({
   problemId: null,
+  problemStarterCode: null,
   code: DEFAULT_CODE.javascript,
   language: "javascript",
   isRunning: false,
   result: null,
   fontSize: 14,
 
-  setProblemId: (problemId) => set({ problemId }),
+  setProblem: (problemId, starterCode) => {
+    const { language } = get()
+    set({
+      problemId,
+      problemStarterCode: starterCode,
+      code: starterCode?.[language] ?? DEFAULT_CODE[language],
+      result: null,
+    })
+  },
+  clearProblem: () =>
+    set((state) => ({
+      problemId: null,
+      problemStarterCode: null,
+      code: DEFAULT_CODE[state.language],
+      result: null,
+    })),
   setCode: (code) => set({ code }),
   setLanguage: (language) =>
-    set({ language, code: DEFAULT_CODE[language], result: null }),
+    set((state) => ({
+      language,
+      code: state.problemStarterCode?.[language] ?? DEFAULT_CODE[language],
+      result: null,
+    })),
   setResult: (result) => set({ result }),
   setIsRunning: (isRunning) => set({ isRunning }),
   clearResult: () => set({ result: null }),

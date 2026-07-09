@@ -35,8 +35,26 @@ export interface Problem {
   constraints: string | null
   difficulty: Difficulty
   order: number
-  starterCode: Record<Language, string> | null
+  starterCode: Partial<Record<Language, string>> | null
   topicId: string
+}
+
+export interface SampleTestCase {
+  input: string
+  expected: string
+  isSample: boolean
+}
+
+export interface ProblemDetail {
+  id: string
+  title: string
+  slug: string
+  statement: string
+  constraints: string | null
+  difficulty: Difficulty
+  starterCode: Partial<Record<Language, string>> | null
+  topic: { id: string; name: string; slug: string }
+  sampleTestCases: SampleTestCase[]
 }
 
 export interface TestCaseResult {

@@ -2,7 +2,7 @@
 
 import { useEditorStore } from "@/stores/editorStore"
 import { Play, Trash2, Sparkles, CheckCircle2, XCircle } from "lucide-react"
-import { Verdict } from "@/types"
+import { Verdict, SubmitResponse } from "@/types"
 
 const VERDICT_LABEL: Record<Verdict, string> = {
   PENDING: "Pending",
@@ -23,10 +23,50 @@ const VERDICT_COLOR: Record<Verdict, string> = {
 }
 
 export function OutputPanel() {
-  const { result, isRunning, clearResult, problemId } = useEditorStore()
+  const {
+    result,
+    isRunning,
+    clearResult,
+    problemId,
+    code,
+    language,
+    setResult,
+    setIsRunning,
+  } = useEditorStore()
 
   const handleRun = async () => {
-    // wiring this in the next step (/api/execute)
+    if (!problemId) return
+    setIsRunning(true)
+    setResult(null)
+    try {
+      const res = await fetch("/api/execute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ problemId, code, language }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Request failed" }))
+        throw new Error(err.error || "Request failed")
+      }
+      const data: SubmitResponse = await res.json()
+      setResult(data)
+    } catch (error) {
+      setResult({
+        verdict: "RUNTIME_ERROR",
+        testResults: [
+          {
+            input: "",
+            expected: "",
+            actual: error instanceof Error ? error.message : "Unknown error",
+            passed: false,
+            isSample: false,
+          },
+        ],
+        runtimeMs: null,
+      })
+    } finally {
+      setIsRunning(false)
+    }
   }
 
   const hasFailure =

@@ -1,17 +1,19 @@
 import { create } from "zustand"
-import { Language, ExecuteResponse } from "@/types"
+import { Language, SubmitResponse } from "@/types"
 
 interface EditorState {
+  problemId: string | null
   code: string
   language: Language
   isRunning: boolean
-  output: ExecuteResponse | null
+  result: SubmitResponse | null
   fontSize: number
+  setProblemId: (problemId: string | null) => void
   setCode: (code: string) => void
   setLanguage: (language: Language) => void
-  setOutput: (output: ExecuteResponse | null) => void
+  setResult: (result: SubmitResponse | null) => void
   setIsRunning: (isRunning: boolean) => void
-  clearOutput: () => void
+  clearResult: () => void
 }
 
 const DEFAULT_CODE: Record<Language, string> = {
@@ -23,16 +25,18 @@ const DEFAULT_CODE: Record<Language, string> = {
 }
 
 export const useEditorStore = create<EditorState>((set) => ({
+  problemId: null,
   code: DEFAULT_CODE.javascript,
   language: "javascript",
   isRunning: false,
-  output: null,
+  result: null,
   fontSize: 14,
 
+  setProblemId: (problemId) => set({ problemId }),
   setCode: (code) => set({ code }),
   setLanguage: (language) =>
-    set({ language, code: DEFAULT_CODE[language], output: null }),
-  setOutput: (output) => set({ output }),
+    set({ language, code: DEFAULT_CODE[language], result: null }),
+  setResult: (result) => set({ result }),
   setIsRunning: (isRunning) => set({ isRunning }),
-  clearOutput: () => set({ output: null }),
+  clearResult: () => set({ result: null }),
 }))

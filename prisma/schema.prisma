@@ -17,7 +17,8 @@ model User {
   updatedAt     DateTime  @updatedAt
   accounts      Account[]
   sessions      Session[]
-  snippets      Snippet[]
+  submissions   Submission[]
+  progress      UserProgress[]
 
   @@map("users")
 }
@@ -51,29 +52,99 @@ model Session {
   @@map("sessions")
 }
 
-model Snippet {
-  id        String   @id @default(cuid())
-  title     String   @default("Untitled")
-  code      String   @db.Text
-  language  String   @default("javascript")
-  isPublic  Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  userId    String?
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+model Topic {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  slug        String    @unique
+  description String?   @db.Text
+  order       Int       @default(0)
+  problems    Problem[]
+  createdAt   DateTime  @default(now())
 
-  @@map("snippets")
+  @@map("topics")
 }
 
-model Execution {
-  id            String   @id @default(cuid())
-  code          String   @db.Text
-  language      String
-  stdout        String?  @db.Text
-  stderr        String?  @db.Text
-  exitCode      Int?
-  executionTime Int?
-  createdAt     DateTime @default(now())
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
 
-  @@map("executions")
+model Problem {
+  id           String         @id @default(cuid())
+  title        String
+  slug         String         @unique
+  statement    String         @db.Text
+  constraints  String?        @db.Text
+  difficulty   Difficulty     @default(EASY)
+  order        Int            @default(0)
+  starterCode  Json?
+  topicId      String
+  topic        Topic          @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  testCases    TestCase[]
+  submissions  Submission[]
+  progress     UserProgress[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@map("problems")
+}
+
+model TestCase {
+  id        String  @id @default(cuid())
+  problemId String
+  problem   Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  input     String  @db.Text
+  expected  String  @db.Text
+  isSample  Boolean @default(false)
+  order     Int     @default(0)
+
+  @@map("test_cases")
+}
+
+enum Verdict {
+  PENDING
+  ACCEPTED
+  WRONG_ANSWER
+  RUNTIME_ERROR
+  TIME_LIMIT_EXCEEDED
+  COMPILE_ERROR
+}
+
+model Submission {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problemId   String
+  problem     Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  code        String   @db.Text
+  language    String
+  verdict     Verdict  @default(PENDING)
+  testResults Json?
+  runtimeMs   Int?
+  createdAt   DateTime @default(now())
+
+  @@map("submissions")
+}
+
+enum ProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  SOLVED
+}
+
+model UserProgress {
+  id            String         @id @default(cuid())
+  userId        String
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problemId     String
+  problem       Problem        @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  status        ProgressStatus @default(NOT_STARTED)
+  attempts      Int            @default(0)
+  bestVerdict   Verdict?
+  lastAttemptAt DateTime?
+  solvedAt      DateTime?
+
+  @@unique([userId, problemId])
+  @@map("user_progress")
 }

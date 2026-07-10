@@ -96,7 +96,8 @@ export async function POST(request: Request) {
         break
       }
     }
-  } catch {
+  } catch (error) {
+    console.error("Judge execution failed:", error)
     verdict = "RUNTIME_ERROR"
   }
 

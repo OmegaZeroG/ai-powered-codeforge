@@ -128,3 +128,34 @@
     @apply font-sans;
   }
 }
+/* Landing page — judge replay signature element */
+@keyframes judge-state-a {
+  0%, 3% { opacity: 0; }
+  8%, 28% { opacity: 1; }
+  33%, 100% { opacity: 0; }
+}
+@keyframes judge-state-b {
+  0%, 36% { opacity: 0; }
+  41%, 61% { opacity: 1; }
+  66%, 100% { opacity: 0; }
+}
+@keyframes judge-state-c {
+  0%, 69% { opacity: 0; }
+  74%, 96% { opacity: 1; }
+  99%, 100% { opacity: 0; }
+}
+.judge-panel-a { animation: judge-state-a 9s ease-in-out infinite; }
+.judge-panel-b { animation: judge-state-b 9s ease-in-out infinite; }
+.judge-panel-c { animation: judge-state-c 9s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .judge-panel-a,
+  .judge-panel-b,
+  .judge-panel-c {
+    animation: none !important;
+    opacity: 0 !important;
+  }
+  .judge-panel-c {
+    opacity: 1 !important;
+  }
+}

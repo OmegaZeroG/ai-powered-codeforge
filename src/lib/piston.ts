@@ -1,10 +1,10 @@
-const PISTON_URL = "https://emkc.org/api/v2/piston"
+const PISTON_URL = process.env.PISTON_URL || "http://localhost:2000/api/v2"
 
 const RUNTIME_MAP: Record<string, { language: string; version: string }> = {
   javascript: { language: "javascript", version: "18.15.0" },
   typescript: { language: "typescript", version: "5.0.3" },
   python: { language: "python", version: "3.10.0" },
-  cpp: { language: "cpp", version: "10.2.0" },
+  cpp: { language: "c++", version: "10.2.0" },
   go: { language: "go", version: "1.16.2" },
 }
 
@@ -46,7 +46,8 @@ export async function runCode(
   })
 
   if (!res.ok) {
-    throw new Error(`Piston API error: ${res.status}`)
+    const body = await res.text()
+    throw new Error(`Piston execution failed: ${res.status} ${body}`)
   }
 
   return res.json()

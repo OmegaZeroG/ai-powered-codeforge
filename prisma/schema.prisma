@@ -71,21 +71,24 @@ enum Difficulty {
 }
 
 model Problem {
-  id           String         @id @default(cuid())
-  title        String
-  slug         String         @unique
-  statement    String         @db.Text
-  constraints  String?        @db.Text
-  difficulty   Difficulty     @default(EASY)
-  order        Int            @default(0)
-  starterCode  Json?
-  topicId      String
-  topic        Topic          @relation(fields: [topicId], references: [id], onDelete: Cascade)
-  testCases    TestCase[]
-  submissions  Submission[]
-  progress     UserProgress[]
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  id            String         @id @default(cuid())
+  title         String
+  slug          String         @unique
+  statement     String         @db.Text
+  constraints   String?        @db.Text
+  difficulty    Difficulty     @default(EASY)
+  order         Int            @default(0)
+  starterCode   Json?
+  // When true, the statement panel blocks/poisons copy attempts (see
+  // src/lib/anticheat.ts). Defaults on; curators can turn it off per-problem.
+  copyProtected Boolean        @default(true)
+  topicId       String
+  topic         Topic          @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  testCases     TestCase[]
+  submissions   Submission[]
+  progress      UserProgress[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
   @@map("problems")
 }
@@ -122,6 +125,10 @@ model Submission {
   verdict     Verdict  @default(PENDING)
   testResults Json?
   runtimeMs   Int?
+  // Heuristic anti-cheat signal: true if the submitted code contains this
+  // problem's canary token (see src/lib/anticheat.ts). Not enforced/blocked,
+  // just recorded for later review -- a detect-and-discourage signal, not proof.
+  suspectedAiPasted Boolean  @default(false)
   createdAt   DateTime @default(now())
 
   @@map("submissions")

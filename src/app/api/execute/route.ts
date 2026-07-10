@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { runCode } from "@/lib/piston"
+import { detectCanary } from "@/lib/anticheat"
 import { Verdict } from "@prisma/client"
 
 export async function POST(request: Request) {
@@ -102,6 +103,7 @@ export async function POST(request: Request) {
   }
 
   const runtimeMs = Date.now() - startedAt
+  const suspectedAiPasted = detectCanary(code, problemId)
 
   const submission = await prisma.submission.create({
     data: {
@@ -112,6 +114,7 @@ export async function POST(request: Request) {
       verdict,
       testResults,
       runtimeMs,
+      suspectedAiPasted,
     },
   })
 

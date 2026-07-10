@@ -36,6 +36,7 @@ export interface Problem {
   difficulty: Difficulty
   order: number
   starterCode: Partial<Record<Language, string>> | null
+  copyProtected: boolean
   topicId: string
 }
 
@@ -53,6 +54,7 @@ export interface ProblemDetail {
   constraints: string | null
   difficulty: Difficulty
   starterCode: Partial<Record<Language, string>> | null
+  copyProtected: boolean
   topic: { id: string; name: string; slug: string }
   sampleTestCases: SampleTestCase[]
 }

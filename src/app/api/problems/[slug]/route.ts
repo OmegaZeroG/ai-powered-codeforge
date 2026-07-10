@@ -31,6 +31,7 @@ export async function GET(
     constraints: problem.constraints,
     difficulty: problem.difficulty,
     starterCode: problem.starterCode,
+    copyProtected: problem.copyProtected,
     topic: problem.topic,
     sampleTestCases: problem.testCases,
   })

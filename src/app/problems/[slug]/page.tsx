@@ -5,6 +5,7 @@ import { Editor } from "@/components/Editor"
 import { Toolbar } from "@/components/Toolbar"
 import { OutputPanel } from "@/components/OutputPanel"
 import { ProblemLoader } from "@/components/ProblemLoader"
+import { ProtectedStatement } from "@/components/ProtectedStatement"
 import { ProblemDetail, Language } from "@/types"
 
 const DIFFICULTY_COLOR: Record<string, string> = {
@@ -44,6 +45,7 @@ export default async function ProblemPage({
     constraints: problem.constraints,
     difficulty: problem.difficulty,
     starterCode: problem.starterCode as Partial<Record<Language, string>> | null,
+    copyProtected: problem.copyProtected,
     topic: problem.topic,
     sampleTestCases: problem.testCases,
   }
@@ -63,56 +65,61 @@ export default async function ProblemPage({
             ← {problemDetail.topic.name}
           </Link>
 
-          <div className="flex items-center gap-3 mt-2 mb-4">
-            <h1 className="text-white text-xl font-semibold">
-              {problemDetail.title}
-            </h1>
-            <span
-              className={`text-xs font-medium ${DIFFICULTY_COLOR[problemDetail.difficulty]}`}
-            >
-              {problemDetail.difficulty}
-            </span>
-          </div>
-
-          <p className="text-[#D0D0E0] text-sm whitespace-pre-wrap leading-relaxed">
-            {problemDetail.statement}
-          </p>
-
-          {problemDetail.constraints && (
-            <div className="mt-6">
-              <h2 className="text-[#8888A8] text-xs font-medium uppercase tracking-wider mb-2">
-                Constraints
-              </h2>
-              <p className="text-[#8888A8] text-sm whitespace-pre-wrap font-mono">
-                {problemDetail.constraints}
-              </p>
+          <ProtectedStatement
+            problemId={problemDetail.id}
+            copyProtected={problemDetail.copyProtected}
+          >
+            <div className="flex items-center gap-3 mt-2 mb-4">
+              <h1 className="text-white text-xl font-semibold">
+                {problemDetail.title}
+              </h1>
+              <span
+                className={`text-xs font-medium ${DIFFICULTY_COLOR[problemDetail.difficulty]}`}
+              >
+                {problemDetail.difficulty}
+              </span>
             </div>
-          )}
 
-          {problemDetail.sampleTestCases.length > 0 && (
-            <div className="mt-6">
-              <h2 className="text-[#8888A8] text-xs font-medium uppercase tracking-wider mb-2">
-                Examples
-              </h2>
-              <div className="flex flex-col gap-3">
-                {problemDetail.sampleTestCases.map((tc, i) => (
-                  <div
-                    key={i}
-                    className="border border-[#2A2A38] rounded-md p-3 text-xs font-mono"
-                  >
-                    <p className="text-[#55556A] mb-1">Input</p>
-                    <pre className="text-[#F0F0FF] whitespace-pre-wrap mb-2">
-                      {tc.input}
-                    </pre>
-                    <p className="text-[#55556A] mb-1">Output</p>
-                    <pre className="text-[#34D399] whitespace-pre-wrap">
-                      {tc.expected}
-                    </pre>
-                  </div>
-                ))}
+            <p className="text-[#D0D0E0] text-sm whitespace-pre-wrap leading-relaxed">
+              {problemDetail.statement}
+            </p>
+
+            {problemDetail.constraints && (
+              <div className="mt-6">
+                <h2 className="text-[#8888A8] text-xs font-medium uppercase tracking-wider mb-2">
+                  Constraints
+                </h2>
+                <p className="text-[#8888A8] text-sm whitespace-pre-wrap font-mono">
+                  {problemDetail.constraints}
+                </p>
               </div>
-            </div>
-          )}
+            )}
+
+            {problemDetail.sampleTestCases.length > 0 && (
+              <div className="mt-6">
+                <h2 className="text-[#8888A8] text-xs font-medium uppercase tracking-wider mb-2">
+                  Examples
+                </h2>
+                <div className="flex flex-col gap-3">
+                  {problemDetail.sampleTestCases.map((tc, i) => (
+                    <div
+                      key={i}
+                      className="border border-[#2A2A38] rounded-md p-3 text-xs font-mono"
+                    >
+                      <p className="text-[#55556A] mb-1">Input</p>
+                      <pre className="text-[#F0F0FF] whitespace-pre-wrap mb-2">
+                        {tc.input}
+                      </pre>
+                      <p className="text-[#55556A] mb-1">Output</p>
+                      <pre className="text-[#34D399] whitespace-pre-wrap">
+                        {tc.expected}
+                      </pre>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </ProtectedStatement>
         </div>
 
         {/* Editor + output */}

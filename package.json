@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "piston:up": "docker compose -f docker-compose.piston.yml up -d",
+    "piston:down": "docker compose -f docker-compose.piston.yml down",
+    "piston:logs": "docker compose -f docker-compose.piston.yml logs -f",
+    "piston:setup": "node scripts/setup-piston.mjs"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.8",

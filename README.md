@@ -20,6 +20,52 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Code execution (Piston)
+
+CodeForge runs submitted code through [Piston](https://github.com/engineer-man/piston), a sandboxed code execution engine, via `src/lib/piston.ts`. For local development you self-host it with Docker rather than depending on the public `emkc.org` API (which is rate-limited and not meant for production judging traffic).
+
+### 1. Start the Piston container
+
+Requires Docker Desktop with Linux containers (the image needs privileged mode to set up its sandboxing).
+
+```bash
+npm run piston:up
+```
+
+This brings up `docker-compose.piston.yml`, exposing the API on `http://localhost:2000`. Check status with:
+
+```bash
+npm run piston:logs
+```
+
+### 2. Install language runtimes
+
+A fresh Piston container has no language packages installed. Install the runtimes CodeForge expects (JavaScript, TypeScript, Python, C++, Go — kept in sync with `RUNTIME_MAP` in `src/lib/piston.ts`):
+
+```bash
+npm run piston:setup
+```
+
+This polls the container until it's ready, then installs any missing packages. Safe to re-run — it skips packages that are already installed.
+
+### 3. Point the app at it
+
+In `.env`:
+
+```
+PISTON_URL=http://localhost:2000/api/v2
+```
+
+This is already the default if `PISTON_URL` is unset, so it only needs to be explicit if you're pointing at a remote/shared Piston instance instead.
+
+### Shutting it down
+
+```bash
+npm run piston:down
+```
+
+Installed packages persist in a named Docker volume (`piston-packages`), so you won't need to reinstall them next time you run `piston:up`.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

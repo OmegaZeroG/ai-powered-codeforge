@@ -8,13 +8,15 @@ import { redirect } from "next/navigation"
 import type { Permission } from "@prisma/client"
 import type { Session } from "next-auth"
 import { auth } from "@/auth"
+import { isBanActive } from "@/lib/ban"
 
-/** Does this session hold the given permission? Banned users always fail. */
+/** Does this session hold the given permission? Actively-banned users always
+ *  fail (an expired timed ban does not block -- see isBanActive). */
 export function hasPermission(
   session: Session | null,
   permission: Permission,
 ): boolean {
-  if (!session?.user || session.user.banned) return false
+  if (!session?.user || isBanActive(session.user)) return false
   return session.user.permissions?.includes(permission) ?? false
 }
 
@@ -28,7 +30,7 @@ export function hasAnyPermission(
 
 /** True if the account is staff (holds any admin permission). */
 export function isStaff(session: Session | null): boolean {
-  if (!session?.user || session.user.banned) return false
+  if (!session?.user || isBanActive(session.user)) return false
   return (session.user.permissions?.length ?? 0) > 0
 }
 
@@ -73,8 +75,9 @@ export async function requirePermissionPage(
   if (!session?.user) {
     redirect("/login")
   }
-  if (session.user.banned) {
-    redirect("/banned")
+  if (isBanActive(session.user)) {
+    // One canonical suspension screen: the profile banner + countdown.
+    redirect("/profile")
   }
   if (!hasPermission(session, permission)) {
     redirect("/")

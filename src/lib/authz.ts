@@ -1,6 +1,6 @@
 // Central authorization helpers for the admin panel.
 //
-// Rule: never trust the middleware gate alone. Middleware runs on the edge and
+// Rule: never trust the edge proxy gate alone. The proxy runs on the edge and
 // only narrows *routing*; it can be bypassed by internal calls, server actions
 // invoked directly, or future refactors. So every admin page and every mutation
 // re-derives the session and calls one of these helpers server-side.

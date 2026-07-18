@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { hasPermission, requirePermissionPage } from "@/lib/authz"
 import { Ban, ShieldCheck, Search } from "lucide-react"
 import { Avatar } from "@/components/admin/Avatar"
+import { isBanActive, isBanExpired, isPermanentBan, formatRemaining } from "@/lib/ban"
 
 export const dynamic = "force-dynamic"
 
@@ -55,6 +56,7 @@ export default async function AdminUsersPage({
         email: true,
         image: true,
         banned: true,
+        bannedUntil: true,
         permissions: true,
         createdAt: true,
         _count: { select: { submissions: true, warnings: true } },
@@ -175,9 +177,21 @@ export default async function AdminUsersPage({
                     {u.createdAt.toLocaleDateString()}
                   </td>
                   <td className="px-4 py-3">
-                    {u.banned ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-2 py-0.5 text-xs text-red-300">
-                        <Ban size={12} /> Banned
+                    {isBanActive(u) ? (
+                      <span
+                        className="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-2 py-0.5 text-xs text-red-300"
+                        title={
+                          isPermanentBan(u)
+                            ? "Permanent ban"
+                            : `${formatRemaining(u.bannedUntil!, Date.now())} left`
+                        }
+                      >
+                        <Ban size={12} />{" "}
+                        {isPermanentBan(u) ? "Banned" : "Banned · timed"}
+                      </span>
+                    ) : u.banned && isBanExpired(u) ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-xs text-amber-300">
+                        <Ban size={12} /> Ban expired
                       </span>
                     ) : u.permissions.length > 0 ? (
                       <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-300">

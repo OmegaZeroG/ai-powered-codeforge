@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma"
 import { hasPermission, requirePermissionPage } from "@/lib/authz"
 import { Avatar } from "@/components/admin/Avatar"
 import { ModerationAction } from "@/components/admin/ModerationAction"
+import { BanUserControl } from "@/components/admin/BanUserControl"
+import { isBanActive, isBanExpired, isPermanentBan, formatRemaining } from "@/lib/ban"
 import { banUser, unbanUser, warnUser, revokeSubmission, restoreSubmission } from "../../_actions/moderation"
 import { ArrowLeft, Ban, ShieldCheck, Mail, MapPin, Code2, Globe } from "lucide-react"
 
@@ -49,6 +51,7 @@ export default async function AdminUserDetailPage({
       permissions: true,
       banned: true,
       bannedAt: true,
+      bannedUntil: true,
       bannedReason: true,
       createdAt: true,
       _count: { select: { submissions: true } },
@@ -80,6 +83,8 @@ export default async function AdminUserDetailPage({
 
   const isStaffTarget = user.permissions.length > 0
   const isSelf = user.id === session?.user?.id
+  const banActive = isBanActive(user)
+  const banExpired = user.banned && isBanExpired(user)
 
   const auditEvents = canSeeAudit
     ? await prisma.auditLog.findMany({
@@ -108,9 +113,16 @@ export default async function AdminUserDetailPage({
               <h1 className="font-display text-xl tracking-tight text-foreground">
                 {user.name ?? "Unnamed account"}
               </h1>
-              {user.banned ? (
+              {banActive ? (
                 <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-2 py-0.5 text-xs text-red-300">
-                  <Ban size={12} /> Banned
+                  <Ban size={12} />{" "}
+                  {isPermanentBan(user)
+                    ? "Banned · permanent"
+                    : `Banned · ${formatRemaining(user.bannedUntil!, Date.now())} left`}
+                </span>
+              ) : banExpired ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-xs text-amber-300">
+                  <Ban size={12} /> Ban expired
                 </span>
               ) : isStaffTarget ? (
                 <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-300">
@@ -162,20 +174,13 @@ export default async function AdminUserDetailPage({
                   <ModerationAction
                     action={unbanUser}
                     hiddenFields={{ userId: user.id }}
-                    label="Unban"
+                    label={banExpired ? "Clear expired ban" : "Unban"}
                     title="Lift the ban on this account"
                     tone="good"
                     placeholder="Reason for unbanning…"
                   />
                 ) : (
-                  <ModerationAction
-                    action={banUser}
-                    hiddenFields={{ userId: user.id }}
-                    label="Ban user"
-                    title="Ban this account"
-                    tone="danger"
-                    placeholder="Reason for the ban…"
-                  />
+                  <BanUserControl action={banUser} userId={user.id} />
                 ))}
               {canWarn ? (
                 <ModerationAction
@@ -198,6 +203,13 @@ export default async function AdminUserDetailPage({
           {user.bannedAt ? (
             <span className="text-red-300/70"> · {user.bannedAt.toLocaleString()}</span>
           ) : null}
+          <div className="mt-1 text-xs text-red-300/70">
+            {isPermanentBan(user)
+              ? "Permanent ban."
+              : banExpired
+                ? `Expired ${user.bannedUntil!.toLocaleString()} — still flagged; clear to restore access.`
+                : `Ends ${user.bannedUntil!.toLocaleString()} (${formatRemaining(user.bannedUntil!, Date.now())} left).`}
+          </div>
         </div>
       ) : null}
 

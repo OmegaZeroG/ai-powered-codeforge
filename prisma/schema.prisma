@@ -40,6 +40,11 @@ model User {
   // --- Moderation state (soft + reversible; nothing is hard-deleted) ---
   banned        Boolean   @default(false)
   bannedAt      DateTime?
+  // When the ban lifts. NULL while banned means a permanent ban; a past value
+  // means the ban has expired (enforcement treats it as inactive). Cleared on
+  // unban. See src/lib/ban.ts for the single source of truth on "is this ban
+  // currently active".
+  bannedUntil   DateTime?
   bannedReason  String?   @db.Text
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt

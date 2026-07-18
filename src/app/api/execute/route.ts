@@ -5,12 +5,28 @@ import { prisma } from "@/lib/prisma"
 import { runCode } from "@/lib/piston"
 import { detectCanary } from "@/lib/anticheat"
 import { syncBadges } from "@/lib/gamification"
+import { isBanActive } from "@/lib/ban"
 import { Verdict } from "@prisma/client"
 
 export async function POST(request: Request) {
   const session = await auth()
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  // A banned user is locked out of solving. Re-read the ban state from the DB
+  // rather than trusting the (up-to-60s-stale) JWT, so a just-issued ban blocks
+  // the very next submission. isBanActive() also makes an expired timed ban a
+  // no-op here without any flag flipping.
+  const me = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { banned: true, bannedUntil: true },
+  })
+  if (isBanActive(me)) {
+    return NextResponse.json(
+      { error: "Your account is suspended. You cannot submit solutions." },
+      { status: 403 }
+    )
   }
 
   const { problemId, code, language } = await request.json()

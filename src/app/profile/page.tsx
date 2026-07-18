@@ -13,6 +13,8 @@ import {
 import { TasksCard } from "@/components/gamification/TasksCard"
 import { SolveCalendar } from "@/components/gamification/SolveCalendar"
 import { EditProfileDialog } from "@/components/profile/EditProfileDialog"
+import { BanNotice } from "@/components/profile/BanNotice"
+import { isBanActive } from "@/lib/ban"
 import { MapPin, LinkIcon } from "lucide-react"
 import type { Difficulty } from "@/types"
 
@@ -59,11 +61,15 @@ export default async function ProfilePage() {
         location: true,
         githubHandle: true,
         website: true,
+        banned: true,
+        bannedUntil: true,
+        bannedReason: true,
       },
     }),
     loadGamification(userId),
   ])
 
+  const banned = user ? isBanActive(user) : false
   const displayName = user?.name || user?.email?.split("@")[0] || "Coder"
   const handle = user?.email ? user.email.split("@")[0] : "coder"
   const initials = displayName
@@ -118,6 +124,14 @@ export default async function ProfilePage() {
 
             {/* CENTER */}
             <div className="space-y-6">
+              {banned ? (
+                <BanNotice
+                  reason={user?.bannedReason ?? null}
+                  bannedUntil={
+                    user?.bannedUntil ? user.bannedUntil.toISOString() : null
+                  }
+                />
+              ) : null}
               {/* Identity */}
               <section className="rounded-2xl border border-border/70 bg-card/60 p-6 backdrop-blur-sm">
                 <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">

@@ -58,11 +58,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return null
         }
 
-        // Banned users cannot obtain a session at all.
-        if (user.banned) {
-          return null
-        }
-
+        // Banned users MAY sign in now — the ban is enforced as a profile-only
+        // lockdown (see proxy.ts + src/lib/ban.ts), not a login block, so the
+        // user can read their suspension notice and countdown.
         return {
           id: user.id,
           email: user.email,
@@ -100,10 +98,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           },
         })
       } else {
-        // A banned user is denied entry regardless of provider.
-        if (existing.banned) {
-          return false
-        }
+        // Banned users may still sign in (ban = profile-only lockdown, enforced
+        // downstream), so no ban check here.
         if (!existing.image && user.image) {
           // Backfill an avatar for a previously password-only account.
           await prisma.user.update({
@@ -141,10 +137,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (token.id && (user || stale)) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { permissions: true, banned: true },
+          select: { permissions: true, banned: true, bannedUntil: true },
         })
         token.permissions = dbUser?.permissions ?? []
         token.banned = dbUser?.banned ?? false
+        token.bannedUntil = dbUser?.bannedUntil
+          ? dbUser.bannedUntil.toISOString()
+          : null
         token.rbacRefreshedAt = Date.now()
       }
 
@@ -155,6 +154,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.id = token.id as string
         session.user.permissions = (token.permissions as Permission[]) ?? []
         session.user.banned = (token.banned as boolean) ?? false
+        session.user.bannedUntil = (token.bannedUntil as string | null) ?? null
       }
       return session
     },

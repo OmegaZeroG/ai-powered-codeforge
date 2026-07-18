@@ -18,6 +18,7 @@ import { headers } from "next/headers"
 import { z } from "zod"
 import type { AuditAction } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
+import { resolveBannedUntil } from "@/lib/ban"
 import { requirePermission, AuthorizationError } from "@/lib/authz"
 
 export type ActionResult = { ok: true } | { ok: false; error: string }
@@ -31,6 +32,9 @@ const reasonSchema = z
   .max(500, "Reason is too long (max 500 characters).")
 
 const idSchema = z.string().trim().min(1).max(64)
+
+// Ban-duration choice: one of the presets or "custom" (paired with customUntil).
+const durationSchema = z.enum(["1d", "7d", "30d", "perm", "custom"])
 
 // Best-effort client IP for the audit trail. Never throws.
 async function clientIp(): Promise<string | undefined> {
@@ -90,6 +94,11 @@ export async function banUser(formData: FormData): Promise<ActionResult> {
     const session = await requirePermission("BAN_USER")
     const userId = idSchema.parse(formData.get("userId"))
     const reason = reasonSchema.parse(formData.get("reason"))
+    // Duration: a preset key ("1d"/"7d"/"30d"/"perm") or "custom" + an ISO date.
+    const duration = durationSchema.parse(formData.get("duration") ?? "perm")
+    const customUntil = formData.get("customUntil")
+      ? String(formData.get("customUntil"))
+      : null
 
     // Guardrail: never ban yourself (locks you out of your own panel).
     if (userId === session.user.id) {
@@ -106,9 +115,18 @@ export async function banUser(formData: FormData): Promise<ActionResult> {
       throw new AuthorizationError("Cannot ban a staff account.")
     }
 
+    // Resolve the duration to a concrete end date (null = permanent). Throws a
+    // plain Error on a bad custom date, which guard() surfaces as its message.
+    const { until } = resolveBannedUntil(duration, customUntil)
+
     await prisma.user.update({
       where: { id: userId },
-      data: { banned: true, bannedAt: new Date(), bannedReason: reason },
+      data: {
+        banned: true,
+        bannedAt: new Date(),
+        bannedUntil: until,
+        bannedReason: reason,
+      },
     })
     await writeAudit({
       actorUserId: session.user.id,
@@ -116,6 +134,10 @@ export async function banUser(formData: FormData): Promise<ActionResult> {
       targetType: "user",
       targetId: userId,
       reason,
+      metadata: {
+        bannedUntil: until ? until.toISOString() : null,
+        permanent: until === null,
+      },
     })
     revalidatePath("/admin/users")
     revalidatePath(`/admin/users/${userId}`)
@@ -130,7 +152,12 @@ export async function unbanUser(formData: FormData): Promise<ActionResult> {
 
     await prisma.user.update({
       where: { id: userId },
-      data: { banned: false, bannedAt: null, bannedReason: null },
+      data: {
+        banned: false,
+        bannedAt: null,
+        bannedUntil: null,
+        bannedReason: null,
+      },
     })
     await writeAudit({
       actorUserId: session.user.id,

@@ -17,7 +17,7 @@ export default async function AdminLayout({
   children: React.ReactNode
 }) {
   // Server-side gate. VIEW_ADMIN is the baseline capability to open the panel;
-  // the middleware check is only defense-in-depth. Individual pages/actions
+  // the edge proxy check is only defense-in-depth. Individual pages/actions
   // further require their specific permission.
   const session = await requirePermissionPage("VIEW_ADMIN")
 

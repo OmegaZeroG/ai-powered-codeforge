@@ -2,8 +2,8 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { signOut } from "next-auth/react"
-import { Terminal, LogOut } from "lucide-react"
+import { useSession, signOut } from "next-auth/react"
+import { Terminal, LogOut, ShieldCheck } from "lucide-react"
 
 /* ---------------------------------------------------------------------------
    ProductNav — the in-app top bar for logged-in pages (Topics, Profile, …).
@@ -21,6 +21,11 @@ const LINKS = [
 
 export function ProductNav() {
   const pathname = usePathname()
+  const { data: session } = useSession()
+  // Show the admin entry only to staff (anyone holding a permission). The
+  // panel itself re-checks server-side; this is purely a convenience link so
+  // staff don't have to type /admin by hand. Invisible to normal users.
+  const isStaff = (session?.user?.permissions?.length ?? 0) > 0
 
   return (
     <header className="sticky top-0 z-40 px-4 pt-4">
@@ -62,6 +67,21 @@ export function ProductNav() {
               </Link>
             )
           })}
+
+          {isStaff ? (
+            <Link
+              href="/admin"
+              title="Open the admin control panel"
+              className={`ml-1 inline-flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-[13px] transition-colors ${
+                pathname.startsWith("/admin")
+                  ? "border-primary/60 bg-primary/15 text-foreground"
+                  : "border-primary/40 text-primary hover:bg-primary/10 hover:text-foreground"
+              }`}
+            >
+              <ShieldCheck size={14} />
+              Admin Control
+            </Link>
+          ) : null}
         </div>
 
         <button

@@ -1,37 +1,77 @@
 "use client"
 
+import { useState } from "react"
+import Link from "next/link"
 import { useSession, signOut } from "next-auth/react"
 import { useEditorStore } from "@/stores/editorStore"
 import { useAIStore } from "@/stores/aiStore"
 import { Language } from "@/types"
-import { Sparkles, Share2, Save, LogOut } from "lucide-react"
+import { Sparkles, Share2, Save, LogOut, RotateCcw, Check } from "lucide-react"
 
 const LANGUAGES: { value: Language; label: string }[] = [
   { value: "javascript", label: "JavaScript" },
-  { value: "typescript", label: "TypeScript" },
   { value: "python", label: "Python" },
   { value: "cpp", label: "C++" },
-  { value: "go", label: "Go" },
+  { value: "java", label: "Java" },
 ]
 
+// localStorage key for a draft, scoped per problem + language. The scratch
+// editor (no problem loaded) gets its own "scratch" bucket per language.
+export function draftKey(problemId: string | null, language: Language) {
+  return `codeforge:draft:${problemId ?? "scratch"}:${language}`
+}
+
 export function Toolbar() {
-  const { language, setLanguage } = useEditorStore()
+  const { language, setLanguage, resetCode, code, problemId } = useEditorStore()
   const { togglePanel, isPanelOpen } = useAIStore()
   const { data: session, status } = useSession()
+  const [confirmingReset, setConfirmingReset] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  const handleSave = () => {
+    try {
+      localStorage.setItem(draftKey(problemId, language), code)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 1500)
+    } catch {
+      // Storage unavailable (private mode / quota) — fail quietly.
+    }
+  }
+
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(code)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch {
+      // Clipboard blocked — nothing else to do.
+    }
+  }
 
   return (
-    <div className="h-12 bg-[#111118] border-b border-[#2A2A38] flex items-center justify-between px-4">
+    <div className="h-14 bg-ink border-b border-edge flex items-center justify-between px-4">
       {/* Left — Logo */}
       <div className="flex items-center gap-3">
-        <span className="text-white font-semibold text-base">
-          CodeForge
-        </span>
+        <Link
+          href="/"
+          className="flex items-center gap-2 rounded-md transition-opacity hover:opacity-80"
+          title="Go to home"
+        >
+          <span className="w-6 h-6 rounded-md bg-brand text-white grid place-items-center font-bold text-[10px] tracking-tight select-none">
+            CF
+          </span>
+          <span className="text-white font-bold text-base tracking-tight">
+            CodeForge
+          </span>
+        </Link>
+        <span className="w-px h-6 bg-edge" aria-hidden />
 
         {/* Language selector */}
         <select
           value={language}
           onChange={(e) => setLanguage(e.target.value as Language)}
-          className="bg-[#1A1A24] text-[#F0F0FF] text-sm border border-[#2A2A38] rounded-md px-3 py-1 focus:outline-none focus:border-[#7C6AF7] cursor-pointer"
+          className="bg-raised text-fg text-sm border border-edge rounded-lg px-3.5 py-1.5 focus:outline-none focus:border-brand cursor-pointer"
         >
           {LANGUAGES.map((lang) => (
             <option key={lang.value} value={lang.value}>
@@ -39,41 +79,104 @@ export function Toolbar() {
             </option>
           ))}
         </select>
+
+        {/* Reset code to starter — inline two-step confirm (no blocking dialog) */}
+        {confirmingReset ? (
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => {
+                resetCode()
+                setConfirmingReset(false)
+              }}
+              className="flex items-center gap-1.5 text-sm px-3.5 py-1.5 rounded-lg text-white bg-wa/20 hover:bg-wa/30 border border-wa/40 transition-colors"
+              title="Confirm reset to starter code"
+            >
+              <RotateCcw size={14} />
+              Confirm reset
+            </button>
+            <button
+              onClick={() => setConfirmingReset(false)}
+              className="text-sm px-3.5 py-1.5 rounded-lg text-fg-muted hover:text-white hover:bg-raised border border-edge transition-colors"
+              title="Cancel"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setConfirmingReset(true)}
+            className="flex items-center gap-1.5 text-sm px-3.5 py-1.5 rounded-lg bg-raised text-fg-dim hover:text-white hover:bg-raised-bright border border-edge transition-colors"
+            title="Reset to starter code"
+          >
+            <RotateCcw size={14} />
+            Reset
+          </button>
+        )}
       </div>
 
       {/* Right — Actions */}
       <div className="flex items-center gap-2">
+        {/* AI toggle pill — sparkles + label + on/off switch */}
         <button
           onClick={togglePanel}
-          className={`flex items-center gap-2 text-sm px-3 py-1.5 rounded-md transition-colors ${
+          aria-pressed={isPanelOpen}
+          className={`flex items-center gap-2 text-sm px-3.5 py-1.5 rounded-lg border transition-colors ${
             isPanelOpen
-              ? "bg-[#7C6AF7] text-white"
-              : "text-[#8888A8] hover:text-white hover:bg-[#1A1A24]"
+              ? "border-brand/60 bg-brand/10 text-white"
+              : "border-edge bg-raised text-fg-dim hover:text-white hover:bg-raised-bright"
           }`}
         >
-          <Sparkles size={14} />
+          <Sparkles size={14} className={isPanelOpen ? "text-brand" : ""} />
           AI
+          <span
+            aria-hidden
+            className={`relative inline-block w-7 h-4 rounded-full transition-colors ${
+              isPanelOpen ? "bg-brand" : "bg-edge"
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-[left] ${
+                isPanelOpen ? "left-3.5" : "left-0.5"
+              }`}
+            />
+          </span>
         </button>
 
-        <button className="flex items-center gap-2 text-sm px-3 py-1.5 rounded-md text-[#8888A8] hover:text-white hover:bg-[#1A1A24] transition-colors">
-          <Save size={14} />
-          Save
+        <button
+          onClick={handleSave}
+          className={`flex items-center gap-2 text-sm px-3.5 py-1.5 rounded-lg border transition-colors ${
+            saved
+              ? "border-ac/50 bg-ac/10 text-ac"
+              : "bg-raised text-fg-dim hover:text-white hover:bg-raised-bright border-edge"
+          }`}
+          title="Save draft to this browser"
+        >
+          {saved ? <Check size={14} /> : <Save size={14} />}
+          {saved ? "Saved" : "Save"}
         </button>
 
-        <button className="flex items-center gap-2 text-sm px-3 py-1.5 rounded-md text-[#8888A8] hover:text-white hover:bg-[#1A1A24] transition-colors">
-          <Share2 size={14} />
-          Share
+        <button
+          onClick={handleShare}
+          className={`flex items-center gap-2 text-sm px-3.5 py-1.5 rounded-lg border transition-colors ${
+            copied
+              ? "border-ac/50 bg-ac/10 text-ac"
+              : "bg-raised text-fg-dim hover:text-white hover:bg-raised-bright border-edge"
+          }`}
+          title="Copy code to clipboard"
+        >
+          {copied ? <Check size={14} /> : <Share2 size={14} />}
+          {copied ? "Copied" : "Share"}
         </button>
 
         {/* Session info + logout */}
         {status === "authenticated" && session?.user && (
-          <div className="flex items-center gap-2 pl-3 ml-1 border-l border-[#2A2A38]">
-            <span className="text-[#8888A8] text-sm max-w-[140px] truncate">
+          <div className="flex items-center gap-2 pl-3 ml-1 border-l border-edge">
+            <span className="text-fg-muted text-sm max-w-[140px] truncate">
               {session.user.name || session.user.email}
             </span>
             <button
-              onClick={() => signOut({ callbackUrl: "/login" })}
-              className="flex items-center gap-1.5 text-sm px-2.5 py-1.5 rounded-md text-[#8888A8] hover:text-[#F87171] hover:bg-[#1A1A24] transition-colors"
+              onClick={() => signOut({ callbackUrl: "/" })}
+              className="flex items-center gap-1.5 text-sm px-2.5 py-1.5 rounded-lg text-fg-muted hover:text-wa hover:bg-raised transition-colors"
               title="Log out"
             >
               <LogOut size={14} />

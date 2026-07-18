@@ -16,10 +16,9 @@ const PISTON_URL = process.env.PISTON_URL || "http://localhost:2000/api/v2"
 
 const REQUIRED_PACKAGES = [
   { language: "node", version: "18.15.0" }, // provides "javascript" alias
-  { language: "typescript", version: "5.0.3" },
   { language: "python", version: "3.10.0" },
   { language: "gcc", version: "10.2.0" }, // provides "c++" alias
-  { language: "go", version: "1.16.2" },
+  { language: "java", version: "15.0.2" },
 ]
 
 const WAIT_FOR_READY_TIMEOUT_MS = 60_000

@@ -1,26 +1,18 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import { useEditorStore } from "@/stores/editorStore"
-import { Play, Trash2, Sparkles, CheckCircle2, XCircle } from "lucide-react"
-import { Verdict, SubmitResponse } from "@/types"
-
-const VERDICT_LABEL: Record<Verdict, string> = {
-  PENDING: "Pending",
-  ACCEPTED: "Accepted",
-  WRONG_ANSWER: "Wrong Answer",
-  RUNTIME_ERROR: "Runtime Error",
-  TIME_LIMIT_EXCEEDED: "Time Limit Exceeded",
-  COMPILE_ERROR: "Compile Error",
-}
-
-const VERDICT_COLOR: Record<Verdict, string> = {
-  PENDING: "text-[#8888A8]",
-  ACCEPTED: "text-[#34D399]",
-  WRONG_ANSWER: "text-[#F87171]",
-  RUNTIME_ERROR: "text-[#F87171]",
-  TIME_LIMIT_EXCEEDED: "text-[#FBBF24]",
-  COMPILE_ERROR: "text-[#F87171]",
-}
+import { useAIStore } from "@/stores/aiStore"
+import {
+  Play,
+  Trash2,
+  Sparkles,
+  CheckCircle2,
+  XCircle,
+  Terminal,
+} from "lucide-react"
+import { SubmitResponse } from "@/types"
+import { VerdictStamp, AcceptedStamp } from "@/components/Verdict"
 
 export function OutputPanel() {
   const {
@@ -33,6 +25,8 @@ export function OutputPanel() {
     setResult,
     setIsRunning,
   } = useEditorStore()
+  const { isPanelOpen, togglePanel } = useAIStore()
+  const router = useRouter()
 
   const handleRun = async () => {
     if (!problemId) return
@@ -50,6 +44,12 @@ export function OutputPanel() {
       }
       const data: SubmitResponse = await res.json()
       setResult(data)
+      // An accepted run just changed solved-status / streak / XP / tasks on the
+      // server (the route revalidated those pages). Refresh so this tab reflects
+      // it too, without the user needing a hard reload.
+      if (data.verdict === "ACCEPTED") {
+        router.refresh()
+      }
     } catch (error) {
       setResult({
         verdict: "RUNTIME_ERROR",
@@ -73,38 +73,38 @@ export function OutputPanel() {
     result && result.verdict !== "PENDING" && result.verdict !== "ACCEPTED"
 
   return (
-    <div className="h-full bg-[#0D0D14] flex flex-col">
+    <div className="h-full bg-ink-deep flex flex-col">
       {/* Header */}
-      <div className="h-10 border-t border-[#2A2A38] flex items-center justify-between px-4">
+      <div className="h-10 border-t border-edge flex items-center justify-between px-4">
         <div className="flex items-center gap-2">
-          <span className="text-[#8888A8] text-xs font-medium uppercase tracking-wider">
+          <Terminal size={13} className="text-fg-faint" aria-hidden />
+          <span className="text-fg-muted text-xs font-medium uppercase tracking-[0.15em]">
             Output
           </span>
-          {result && (
-            <span
-              className={`text-xs font-medium ${VERDICT_COLOR[result.verdict]}`}
-            >
-              · {VERDICT_LABEL[result.verdict]}
-            </span>
-          )}
+          {result && <VerdictStamp verdict={result.verdict} />}
         </div>
         <div className="flex items-center gap-2">
           {hasFailure && (
-            <button className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md bg-[#7C6AF720] text-[#7C6AF7] hover:bg-[#7C6AF740] transition-colors">
+            <button
+              onClick={() => {
+                if (!isPanelOpen) togglePanel()
+              }}
+              className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md bg-brand/10 text-brand hover:bg-brand/25 transition-colors"
+            >
               <Sparkles size={12} />
               Explain with AI
             </button>
           )}
           <button
             onClick={clearResult}
-            className="text-[#55556A] hover:text-[#8888A8] transition-colors"
+            className="text-fg-faint hover:text-fg-muted transition-colors"
           >
             <Trash2 size={14} />
           </button>
           <button
             onClick={handleRun}
             disabled={isRunning || !problemId}
-            className="flex items-center gap-2 text-sm px-4 py-1.5 rounded-md bg-[#7C6AF7] hover:bg-[#9580FF] text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 text-sm px-4 py-1.5 rounded-lg bg-brand hover:bg-brand-bright text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Play size={14} />
             {isRunning ? "Running..." : "Submit"}
@@ -115,29 +115,41 @@ export function OutputPanel() {
       {/* Output content */}
       <div className="flex-1 overflow-auto p-4 font-mono text-sm">
         {!result && !isRunning && (
-          <p className="text-[#55556A]">
+          <p className="text-fg-faint">
             {problemId
               ? "Press Submit to run your code against the test cases..."
               : "Select a problem to start solving."}
           </p>
         )}
         {isRunning && (
-          <p className="text-[#8888A8] animate-pulse">Running test cases...</p>
+          <p className="text-fg-muted animate-pulse">Running test cases...</p>
         )}
         {result && (
           <div className="space-y-3">
+            {/* The Accepted moment: the judge stamps the submission.
+                Re-mounts on every submit (result is cleared first), so the
+                thunk replays; reduced-motion pins the final frame. */}
+            {result.verdict === "ACCEPTED" && (
+              <div className="py-3 flex justify-center">
+                <AcceptedStamp
+                  passedCount={result.testResults.filter((t) => t.passed).length}
+                  totalCount={result.testResults.length}
+                  runtimeMs={result.runtimeMs}
+                />
+              </div>
+            )}
             {result.testResults.map((test, i) => (
               <div
                 key={i}
-                className="border border-[#2A2A38] rounded-md p-3"
+                className="border border-edge rounded-md p-3"
               >
                 <div className="flex items-center gap-2 mb-2">
                   {test.passed ? (
-                    <CheckCircle2 size={14} className="text-[#34D399]" />
+                    <CheckCircle2 size={14} className="text-ac" />
                   ) : (
-                    <XCircle size={14} className="text-[#F87171]" />
+                    <XCircle size={14} className="text-wa" />
                   )}
-                  <span className="text-xs text-[#8888A8]">
+                  <span className="text-xs text-fg-muted">
                     Test case {i + 1}
                     {test.isSample ? " (sample)" : ""}
                   </span>
@@ -145,22 +157,22 @@ export function OutputPanel() {
                 {(test.isSample || !test.passed) && (
                   <div className="grid grid-cols-3 gap-3 text-xs">
                     <div>
-                      <p className="text-[#55556A] mb-1">Input</p>
-                      <pre className="text-[#F0F0FF] whitespace-pre-wrap">
+                      <p className="text-fg-faint mb-1">Input</p>
+                      <pre className="text-fg whitespace-pre-wrap">
                         {test.input}
                       </pre>
                     </div>
                     <div>
-                      <p className="text-[#55556A] mb-1">Expected</p>
-                      <pre className="text-[#34D399] whitespace-pre-wrap">
+                      <p className="text-fg-faint mb-1">Expected</p>
+                      <pre className="text-ac whitespace-pre-wrap">
                         {test.expected}
                       </pre>
                     </div>
                     <div>
-                      <p className="text-[#55556A] mb-1">Your output</p>
+                      <p className="text-fg-faint mb-1">Your output</p>
                       <pre
                         className={`whitespace-pre-wrap ${
-                          test.passed ? "text-[#34D399]" : "text-[#F87171]"
+                          test.passed ? "text-ac" : "text-wa"
                         }`}
                       >
                         {test.actual}

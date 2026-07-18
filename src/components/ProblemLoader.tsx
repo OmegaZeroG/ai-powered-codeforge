@@ -9,9 +9,21 @@ export function ProblemLoader({ problem }: { problem: ProblemDetail }) {
   const clearProblem = useEditorStore((state) => state.clearProblem)
 
   useEffect(() => {
-    setProblem(problem.id, problem.starterCode)
+    setProblem(
+      problem.id,
+      problem.starterCode,
+      problem.statement,
+      problem.constraints
+    )
     return () => clearProblem()
-  }, [problem.id, problem.starterCode, setProblem, clearProblem])
+  }, [
+    problem.id,
+    problem.starterCode,
+    problem.statement,
+    problem.constraints,
+    setProblem,
+    clearProblem,
+  ])
 
   return null
 }

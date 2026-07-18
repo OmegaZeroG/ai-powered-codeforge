@@ -13,14 +13,53 @@ model User {
   password      String?
   emailVerified DateTime?
   image         String?
+  // Public profile fields, editable from the profile page (all optional).
+  bio           String?   @db.Text
+  location      String?
+  githubHandle  String?
+  website       String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   accounts      Account[]
   sessions      Session[]
   submissions   Submission[]
   progress      UserProgress[]
+  taskClaims    TaskClaim[]
+  badges        UserBadge[]
 
   @@map("users")
+}
+
+// A claimed daily/weekly task. `periodKey` scopes the claim to its window
+// (a UTC day "YYYY-MM-DD" for dailies, an ISO week "YYYY-Www" for weeklies),
+// so the same task can be earned again next period. XP is snapshotted at claim
+// time and summed into the user's total, on top of derived solve XP.
+model TaskClaim {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskKey   String
+  periodKey String
+  xp        Int
+  claimedAt DateTime @default(now())
+
+  @@unique([userId, taskKey, periodKey])
+  @@index([userId])
+  @@map("task_claims")
+}
+
+// A badge, persisted once unlocked so it stays earned even if the underlying
+// condition later lapses (e.g. a streak breaks). Awarded from the judge flow.
+model UserBadge {
+  id       String   @id @default(cuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badgeKey String
+  earnedAt DateTime @default(now())
+
+  @@unique([userId, badgeKey])
+  @@index([userId])
+  @@map("user_badges")
 }
 
 model Account {

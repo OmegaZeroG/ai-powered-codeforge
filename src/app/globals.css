@@ -2,14 +2,44 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
+/* ---------------------------------------------------------------------------
+   CodeForge design tokens
+   The app is dark-only by design: a judge terminal, not a marketing theme.
+   All colors live here — no raw hex values in components.
+--------------------------------------------------------------------------- */
+
+@theme {
+  /* Surfaces (darkest → lightest) — true neutral black, no blue cast */
+  --color-ink: #0b0b0b; /* page background */
+  --color-ink-deep: #090909; /* recessed panels (output, AI) */
+  --color-surface: #121212; /* cards */
+  --color-raised: #1a1a1a; /* inputs, chips */
+  --color-raised-bright: #232323; /* hover on raised */
+  --color-tint: #1a120d; /* brand-tinted surface (recommendation) */
+  --color-edge: #262626; /* 1px borders */
+
+  /* Text (brightest → faintest) */
+  --color-fg: #ededed;
+  --color-fg-dim: #c9c9c9;
+  --color-fg-muted: #8a8a8a;
+  --color-fg-faint: #5a5a5a;
+
+  /* Brand — forge vermilion */
+  --color-brand: #e5532a;
+  --color-brand-bright: #ff6b3d;
+
+  /* Verdict language — shared with difficulty (Easy/Medium/Hard) */
+  --color-ac: #4ade80; /* Accepted / Easy */
+  --color-tle: #fbbf24; /* Time Limit / Medium */
+  --color-wa: #f87171; /* Wrong Answer / Hard */
+}
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  /* All-mono UI: the terminal is the brand. */
+  --font-sans: var(--font-jetbrains-mono);
+  --font-mono: var(--font-jetbrains-mono);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -18,11 +48,6 @@
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -43,78 +68,211 @@
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Landing-only fonts + syntax palette (scoped to .landing below) */
+  --font-inter: var(--font-inter);
+  --font-instrument-serif: var(--font-instrument-serif);
+  --color-code-keyword: var(--code-keyword);
+  --color-code-fn: var(--code-fn);
+  --color-code-string: var(--code-string);
+  --color-code-number: var(--code-number);
+  --color-code-comment: var(--code-comment);
+  --color-code-var: var(--code-var);
+
+  /* Warm-ember product theme (scoped to .forge — Profile / Topics / gamified UI).
+     Ported from the approved Lovable design so these pages match it 1:1. */
+  --color-ember: var(--ember);
+  --color-ember-glow: var(--ember-glow);
+  --color-easy: var(--easy);
+  --color-medium: var(--medium);
+  --color-hard: var(--hard);
 }
 
+/* shadcn semantic variables, mapped onto the CodeForge palette so any
+   generated component inherits the brand instead of stock neutral. */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --background: var(--color-ink);
+  --foreground: var(--color-fg);
+  --card: var(--color-surface);
+  --card-foreground: var(--color-fg);
+  --popover: var(--color-raised);
+  --popover-foreground: var(--color-fg);
+  --primary: var(--color-brand);
+  --primary-foreground: #ffffff;
+  --secondary: var(--color-raised);
+  --secondary-foreground: var(--color-fg-dim);
+  --muted: var(--color-raised);
+  --muted-foreground: var(--color-fg-muted);
+  --accent: var(--color-tint);
+  --accent-foreground: var(--color-fg);
+  --destructive: var(--color-wa);
+  --border: var(--color-edge);
+  --input: var(--color-edge);
+  --ring: var(--color-brand);
+  --radius: 0.5rem;
+  --sidebar: var(--color-surface);
+  --sidebar-foreground: var(--color-fg);
+  --sidebar-primary: var(--color-brand);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--color-raised);
+  --sidebar-accent-foreground: var(--color-fg);
+  --sidebar-border: var(--color-edge);
+  --sidebar-ring: var(--color-brand);
+
+  /* Syntax defaults (used by the landing IDE mockup) */
+  --code-keyword: oklch(0.78 0.16 40);
+  --code-fn: oklch(0.85 0.12 60);
+  --code-string: oklch(0.78 0.11 145);
+  --code-number: oklch(0.78 0.12 65);
+  --code-comment: oklch(0.5 0.012 60);
+  --code-var: oklch(0.9 0.03 65);
 }
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+/* ---------------------------------------------------------------------------
+   Landing page theme (.landing)
+   The marketing page uses a warm near-black + Instrument Serif display, ported
+   from the approved Lovable design. Scoped so the product UI (editor, topics,
+   problems) keeps its true-black, all-mono identity untouched.
+--------------------------------------------------------------------------- */
+.landing {
+  --background: oklch(0.13 0.005 40);
+  --foreground: oklch(0.97 0.004 60);
+  --card: oklch(0.17 0.006 40);
+  --card-foreground: oklch(0.97 0.004 60);
+  --popover: oklch(0.17 0.006 40);
+  --popover-foreground: oklch(0.97 0.004 60);
+  --primary: oklch(0.72 0.19 40);
+  --primary-foreground: oklch(0.13 0.005 40);
+  --secondary: oklch(0.2 0.006 40);
+  --secondary-foreground: oklch(0.97 0.004 60);
+  --muted: oklch(0.2 0.006 40);
+  --muted-foreground: oklch(0.62 0.012 60);
+  --accent: oklch(0.72 0.19 40);
+  --accent-foreground: oklch(0.13 0.005 40);
+  --destructive: oklch(0.62 0.22 25);
+  --border: oklch(0.24 0.008 40);
+  --input: oklch(0.2 0.006 40);
+  --ring: oklch(0.72 0.19 40);
+
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter), system-ui, sans-serif;
+}
+
+.landing :is(h1, h2, h3, h4) {
+  letter-spacing: -0.02em;
+}
+
+/* Smooth in-page navigation for the landing anchors (Features / Pricing / FAQ),
+   with offset so the sticky nav doesn't cover the section heading. */
+:root:has(.landing) {
+  scroll-behavior: smooth;
+}
+.landing :is(#features, #pricing, #faq, #start) {
+  scroll-margin-top: 6rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root:has(.landing) {
+    scroll-behavior: auto;
+  }
+}
+
+/* Instrument Serif display face — for wordmark / trusted-by / big numerals. */
+.landing .font-display {
+  font-family: var(--font-instrument-serif), "Times New Roman", serif;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+/* On the landing page, font-sans means Inter, not the product mono. */
+.landing .font-sans {
+  font-family: var(--font-inter), system-ui, sans-serif;
+}
+.landing .font-mono {
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+}
+
+/* ---------------------------------------------------------------------------
+   Warm-ember product theme (.forge)
+   Profile / Topics / gamified UI. A faithful port of the approved Lovable
+   design: warm near-black surfaces, ember-orange primary, Instrument Serif
+   display, and Easy/Medium/Hard traffic colors. Scoped so the editor/problems
+   pages keep their true-black mono identity.
+--------------------------------------------------------------------------- */
+.forge {
+  --background: oklch(0.13 0.01 40);
+  --foreground: oklch(0.96 0.01 60);
+  --card: oklch(0.16 0.012 40);
+  --card-foreground: oklch(0.96 0.01 60);
+  --popover: oklch(0.16 0.012 40);
+  --popover-foreground: oklch(0.96 0.01 60);
+  --primary: oklch(0.72 0.19 40);
+  --primary-foreground: oklch(0.15 0.02 40);
+  --secondary: oklch(0.2 0.015 40);
+  --secondary-foreground: oklch(0.96 0.01 60);
+  --muted: oklch(0.2 0.015 40);
+  --muted-foreground: oklch(0.6 0.02 50);
+  --accent: oklch(0.72 0.19 40);
+  --accent-foreground: oklch(0.15 0.02 40);
+  --destructive: oklch(0.65 0.22 25);
+  --border: oklch(0.24 0.015 40);
+  --input: oklch(0.22 0.015 40);
+  --ring: oklch(0.72 0.19 40);
+  --ember: oklch(0.72 0.19 40);
+  --ember-glow: oklch(0.78 0.2 50);
+  --easy: oklch(0.75 0.16 155);
+  --medium: oklch(0.78 0.15 85);
+  --hard: oklch(0.65 0.2 25);
+
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter), system-ui, sans-serif;
+}
+
+/* Instrument Serif display face for wordmarks, big numerals, headings. */
+.forge .font-display {
+  font-family: var(--font-instrument-serif), "Times New Roman", serif;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+.forge .font-sans {
+  font-family: var(--font-inter), system-ui, sans-serif;
+}
+.forge .font-mono {
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+}
+.forge :is(h1, h2, h3, h4) {
+  letter-spacing: -0.02em;
+}
+
+/* Grid backdrop, ember radial glow, and glow text — exact port from design. */
+.forge .bg-grid,
+.bg-grid {
+  background-image:
+    linear-gradient(to right, oklch(1 0 0 / 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, oklch(1 0 0 / 0.03) 1px, transparent 1px);
+  background-size: 56px 56px;
+}
+.forge .bg-ember-radial,
+.bg-ember-radial {
+  background:
+    radial-gradient(
+      ellipse 60% 55% at 50% 50%,
+      oklch(0.72 0.19 40 / 0.45),
+      oklch(0.72 0.19 40 / 0.15) 40%,
+      transparent 70%
+    );
+}
+.forge .text-ember-glow,
+.text-ember-glow {
+  text-shadow: 0 0 40px oklch(0.72 0.19 40 / 0.4);
+}
+
+/* Display style for headlines — mono like everything else, set tight and
+   bold so headings read as terminal output with authority. */
+@utility font-display {
+  font-family: var(--font-jetbrains-mono), monospace;
+  letter-spacing: -0.03em;
 }
 
 @layer base {
@@ -128,7 +286,10 @@
     @apply font-sans;
   }
 }
-/* Landing page — judge replay signature element */
+
+/* ---------------------------------------------------------------------------
+   Landing page — judge replay signature element
+--------------------------------------------------------------------------- */
 @keyframes judge-state-a {
   0%, 3% { opacity: 0; }
   8%, 28% { opacity: 1; }
@@ -148,6 +309,18 @@
 .judge-panel-b { animation: judge-state-b 9s ease-in-out infinite; }
 .judge-panel-c { animation: judge-state-c 9s ease-in-out infinite; }
 
+/* ---------------------------------------------------------------------------
+   Verdict stamp — the "thunk" when the judge rules
+--------------------------------------------------------------------------- */
+@keyframes stamp-in {
+  0% { opacity: 0; transform: scale(1.7) rotate(-7deg); }
+  55% { opacity: 1; transform: scale(0.95) rotate(0.5deg); }
+  100% { opacity: 1; transform: scale(1) rotate(-1.5deg); }
+}
+.stamp-in {
+  animation: stamp-in 0.4s cubic-bezier(0.19, 1.1, 0.36, 1.15) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .judge-panel-a,
   .judge-panel-b,
@@ -157,5 +330,73 @@
   }
   .judge-panel-c {
     opacity: 1 !important;
+  }
+  .stamp-in {
+    animation: none;
+    transform: rotate(-1.5deg);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Landing page utilities + animations (ported from Lovable design)
+--------------------------------------------------------------------------- */
+@utility grid-bg {
+  background-image:
+    linear-gradient(oklch(0.3 0.02 40 / 0.25) 1px, transparent 1px),
+    linear-gradient(90deg, oklch(0.3 0.02 40 / 0.25) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+@utility beam-glow {
+  background:
+    radial-gradient(ellipse 60% 40% at 50% 0%, oklch(0.72 0.22 40 / 0.55), transparent 70%),
+    linear-gradient(180deg, oklch(0.75 0.24 40 / 0.9) 0%, oklch(0.72 0.22 40 / 0.2) 40%, transparent 100%);
+}
+
+@utility glow-orange {
+  box-shadow:
+    0 0 0 1px oklch(0.72 0.19 40 / 0.35),
+    0 30px 80px -20px oklch(0.72 0.22 40 / 0.5);
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+@utility animate-float {
+  animation: float-slow 6s ease-in-out infinite;
+}
+
+@keyframes caret-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+@utility animate-caret {
+  animation: caret-blink 1s step-end infinite;
+}
+
+@keyframes shimmer-line {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+@utility animate-shimmer {
+  animation: shimmer-line 2.5s ease-in-out infinite;
+}
+
+@keyframes beam-pulse {
+  0%, 100% { opacity: 0.85; transform: scaleY(1); }
+  50% { opacity: 1; transform: scaleY(1.05); }
+}
+@utility animate-beam {
+  animation: beam-pulse 3.5s ease-in-out infinite;
+  transform-origin: top center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-float,
+  .animate-caret,
+  .animate-shimmer,
+  .animate-beam {
+    animation: none !important;
   }
 }

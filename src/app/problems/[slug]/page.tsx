@@ -6,13 +6,9 @@ import { Toolbar } from "@/components/Toolbar"
 import { OutputPanel } from "@/components/OutputPanel"
 import { ProblemLoader } from "@/components/ProblemLoader"
 import { ProtectedStatement } from "@/components/ProtectedStatement"
+import { AIPanelMount } from "@/components/AIPanelMount"
 import { ProblemDetail, Language } from "@/types"
-
-const DIFFICULTY_COLOR: Record<string, string> = {
-  EASY: "text-[#34D399]",
-  MEDIUM: "text-[#FBBF24]",
-  HARD: "text-[#F87171]",
-}
+import { DifficultyTag } from "@/components/Verdict"
 
 export default async function ProblemPage({
   params,
@@ -51,16 +47,16 @@ export default async function ProblemPage({
   }
 
   return (
-    <div className="h-screen w-screen bg-[#0A0A0F] flex flex-col overflow-hidden">
+    <div className="h-screen w-screen bg-ink flex flex-col overflow-hidden">
       <ProblemLoader problem={problemDetail} />
       <Toolbar />
 
       <div className="flex-1 flex overflow-hidden min-h-0">
         {/* Statement panel */}
-        <div className="w-[420px] shrink-0 border-r border-[#2A2A38] overflow-auto px-6 py-6 min-h-0">
+        <div className="w-[420px] shrink-0 border-r border-edge overflow-auto px-6 py-6 min-h-0">
           <Link
             href={`/topics/${problemDetail.topic.slug}`}
-            className="text-[#8888A8] text-sm hover:text-white transition-colors"
+            className="text-fg-muted text-sm hover:text-white transition-colors"
           >
             ← {problemDetail.topic.name}
           </Link>
@@ -73,23 +69,19 @@ export default async function ProblemPage({
               <h1 className="text-white text-xl font-semibold">
                 {problemDetail.title}
               </h1>
-              <span
-                className={`text-xs font-medium ${DIFFICULTY_COLOR[problemDetail.difficulty]}`}
-              >
-                {problemDetail.difficulty}
-              </span>
+              <DifficultyTag difficulty={problemDetail.difficulty} />
             </div>
 
-            <p className="text-[#D0D0E0] text-sm whitespace-pre-wrap leading-relaxed">
+            <p className="text-fg-dim text-sm whitespace-pre-wrap leading-relaxed">
               {problemDetail.statement}
             </p>
 
             {problemDetail.constraints && (
               <div className="mt-6">
-                <h2 className="text-[#8888A8] text-xs font-medium uppercase tracking-wider mb-2">
+                <h2 className="text-fg-muted text-xs font-medium uppercase tracking-wider mb-2">
                   Constraints
                 </h2>
-                <p className="text-[#8888A8] text-sm whitespace-pre-wrap font-mono">
+                <p className="text-fg-muted text-sm whitespace-pre-wrap font-mono">
                   {problemDetail.constraints}
                 </p>
               </div>
@@ -97,21 +89,21 @@ export default async function ProblemPage({
 
             {problemDetail.sampleTestCases.length > 0 && (
               <div className="mt-6">
-                <h2 className="text-[#8888A8] text-xs font-medium uppercase tracking-wider mb-2">
+                <h2 className="text-fg-muted text-xs font-medium uppercase tracking-wider mb-2">
                   Examples
                 </h2>
                 <div className="flex flex-col gap-3">
                   {problemDetail.sampleTestCases.map((tc, i) => (
                     <div
                       key={i}
-                      className="border border-[#2A2A38] rounded-md p-3 text-xs font-mono"
+                      className="border border-edge rounded-md p-3 text-xs font-mono"
                     >
-                      <p className="text-[#55556A] mb-1">Input</p>
-                      <pre className="text-[#F0F0FF] whitespace-pre-wrap mb-2">
+                      <p className="text-fg-faint mb-1">Input</p>
+                      <pre className="text-fg whitespace-pre-wrap mb-2">
                         {tc.input}
                       </pre>
-                      <p className="text-[#55556A] mb-1">Output</p>
-                      <pre className="text-[#34D399] whitespace-pre-wrap">
+                      <p className="text-fg-faint mb-1">Output</p>
+                      <pre className="text-ac whitespace-pre-wrap">
                         {tc.expected}
                       </pre>
                     </div>
@@ -131,6 +123,9 @@ export default async function ProblemPage({
             <OutputPanel />
           </div>
         </div>
+
+        {/* AI tutor panel (mounts when toggled open) */}
+        <AIPanelMount />
       </div>
     </div>
   )

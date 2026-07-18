@@ -6,7 +6,7 @@ import { OutputPanel } from "@/components/OutputPanel"
 
 export default function EditorPage() {
   return (
-    <div className="h-screen w-screen bg-[#0A0A0F] flex flex-col overflow-hidden">
+    <div className="h-screen w-screen bg-ink flex flex-col overflow-hidden">
       {/* Top bar */}
       <Toolbar />
 

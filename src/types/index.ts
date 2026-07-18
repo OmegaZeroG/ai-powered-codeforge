@@ -1,11 +1,10 @@
 export type Language =
   | "javascript"
-  | "typescript"
   | "python"
   | "cpp"
-  | "go"
+  | "java"
 
-export type AIAction = "explain" | "fix" | "complete" | "chat" | "hint"
+export type AIAction = "explain" | "fix" | "complete" | "chat" | "hint" | "rate"
 
 export type Difficulty = "EASY" | "MEDIUM" | "HARD"
 

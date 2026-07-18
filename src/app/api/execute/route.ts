@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server"
+import { revalidatePath } from "next/cache"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { runCode } from "@/lib/piston"
 import { detectCanary } from "@/lib/anticheat"
+import { syncBadges } from "@/lib/gamification"
 import { Verdict } from "@prisma/client"
 
 export async function POST(request: Request) {
@@ -138,10 +140,29 @@ export async function POST(request: Request) {
     },
   })
 
+
+  // On an accepted run, persist any badges the user just unlocked.
+  let awardedBadges: string[] = []
+  if (verdict === "ACCEPTED") {
+    try {
+      awardedBadges = await syncBadges(session.user.id)
+    } catch (error) {
+      console.error("Badge sync failed:", error)
+    }
+
+    // The solve changes SOLVED status, streak, XP and task state -- drop the
+    // cached RSC payloads for the pages that render them so a client
+    // router.refresh() (or next navigation) shows fresh data without a reload.
+    revalidatePath("/topics")
+    revalidatePath("/profile")
+    revalidatePath(`/problems/${problem.slug}`)
+  }
+
   return NextResponse.json({
-    submissionId: submission.id,
     verdict,
-    testResults,
+    testResults: testResults.filter((t) => t.isSample),
     runtimeMs,
+    submissionId: submission.id,
+    awardedBadges,
   })
 }

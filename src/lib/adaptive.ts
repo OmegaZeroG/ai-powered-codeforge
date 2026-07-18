@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma"
-import { Difficulty } from "@prisma/client"
+import { Difficulty, Verdict } from "@prisma/client"
 
 export const DIFFICULTY_WEIGHT: Record<Difficulty, number> = {
   EASY: 1,
@@ -20,40 +20,28 @@ export interface UserSkill {
   solvedCount: number
 }
 
-// Skill score is derived on the fly from solve history + recent accuracy,
-// rather than a stored rating, so it stays in sync with UserProgress/Submission
-// without needing a migration or an update-on-submit hook.
-export async function computeUserSkill(userId: string): Promise<UserSkill> {
-  const [solved, recentSubmissions] = await Promise.all([
-    prisma.userProgress.findMany({
-      where: { userId, status: "SOLVED" },
-      select: { problem: { select: { difficulty: true } } },
-    }),
-    prisma.submission.findMany({
-      where: { userId },
-      orderBy: { createdAt: "desc" },
-      take: 10,
-      select: { verdict: true },
-    }),
-  ])
-
-  const solvedCount = solved.length
+// Pure skill computation from already-fetched data. Keeping this DB-free lets
+// pages fetch the underlying rows once (in parallel with their other queries)
+// and derive skill in memory, instead of each helper opening its own round trip.
+export function computeSkillFromData(
+  solvedDifficulties: Difficulty[],
+  recentVerdicts: Verdict[]
+): UserSkill {
+  const solvedCount = solvedDifficulties.length
   const baseScore =
     solvedCount === 0
       ? 1
-      : solved.reduce(
-          (sum, s) => sum + DIFFICULTY_WEIGHT[s.problem.difficulty],
-          0
-        ) / solvedCount
+      : solvedDifficulties.reduce((sum, d) => sum + DIFFICULTY_WEIGHT[d], 0) /
+        solvedCount
 
   const recentAccuracy =
-    recentSubmissions.length === 0
+    recentVerdicts.length === 0
       ? null
-      : recentSubmissions.filter((s) => s.verdict === "ACCEPTED").length /
-        recentSubmissions.length
+      : recentVerdicts.filter((v) => v === "ACCEPTED").length /
+        recentVerdicts.length
 
   let score = baseScore
-  if (recentAccuracy !== null && recentSubmissions.length >= 3) {
+  if (recentAccuracy !== null && recentVerdicts.length >= 3) {
     if (recentAccuracy >= 0.7) score += 0.5
     else if (recentAccuracy <= 0.3) score -= 0.5
   }
@@ -75,32 +63,13 @@ export interface RecommendedProblem {
   topic: { name: string; slug: string }
 }
 
-export async function getRecommendedProblem(
-  userId: string
-): Promise<{ skill: UserSkill; problem: RecommendedProblem | null }> {
-  const skill = await computeUserSkill(userId)
-
-  const solved = await prisma.userProgress.findMany({
-    where: { userId, status: "SOLVED" },
-    select: { problemId: true },
-  })
-  const solvedIds = solved.map((p) => p.problemId)
-
-  const candidates = await prisma.problem.findMany({
-    where: { id: { notIn: solvedIds } },
-    orderBy: [{ topic: { order: "asc" } }, { order: "asc" }],
-    select: {
-      id: true,
-      title: true,
-      slug: true,
-      difficulty: true,
-      topic: { select: { name: true, slug: true } },
-    },
-  })
-
-  if (candidates.length === 0) {
-    return { skill, problem: null }
-  }
+// Pure recommendation pick from a pre-built candidate list (unsolved problems,
+// already in topic/order sequence) + the computed skill.
+export function pickRecommended(
+  candidates: RecommendedProblem[],
+  skill: UserSkill
+): RecommendedProblem | null {
+  if (candidates.length === 0) return null
 
   const matching = candidates.find((c) => c.difficulty === skill.targetDifficulty)
   const closest = [...candidates].sort(
@@ -109,5 +78,32 @@ export async function getRecommendedProblem(
       Math.abs(DIFFICULTY_WEIGHT[b.difficulty] - skill.score)
   )[0]
 
-  return { skill, problem: matching ?? closest }
+  return matching ?? closest
+}
+
+// Skill score is derived on the fly from solve history + recent accuracy,
+// rather than a stored rating, so it stays in sync with UserProgress/Submission
+// without needing a migration or an update-on-submit hook.
+//
+// Self-fetching wrapper kept for any caller that just wants the skill; the
+// topics pages fetch their own data and call computeSkillFromData directly to
+// avoid duplicate round trips.
+export async function computeUserSkill(userId: string): Promise<UserSkill> {
+  const [solved, recentSubmissions] = await Promise.all([
+    prisma.userProgress.findMany({
+      where: { userId, status: "SOLVED" },
+      select: { problem: { select: { difficulty: true } } },
+    }),
+    prisma.submission.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+      select: { verdict: true },
+    }),
+  ])
+
+  return computeSkillFromData(
+    solved.map((s) => s.problem.difficulty),
+    recentSubmissions.map((s) => s.verdict)
+  )
 }

@@ -3,7 +3,14 @@ import Credentials from "next-auth/providers/credentials"
 import GitHub from "next-auth/providers/github"
 import Google from "next-auth/providers/google"
 import bcrypt from "bcryptjs"
+import type { Permission } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
+
+// How long a token's cached permissions/ban state is trusted before we re-read
+// it from the database. Keeps a freshly banned user (or a just-revoked admin)
+// from lingering with stale privileges, without a DB hit on literally every
+// request. 60s is a good balance for moderation actions.
+const RBAC_TTL_MS = 60_000
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   session: {
@@ -51,6 +58,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return null
         }
 
+        // Banned users cannot obtain a session at all.
+        if (user.banned) {
+          return null
+        }
+
         return {
           id: user.id,
           email: user.email,
@@ -87,26 +99,30 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             emailVerified: new Date(),
           },
         })
-      } else if (!existing.image && user.image) {
-        // Backfill an avatar for a previously password-only account.
-        await prisma.user.update({
-          where: { email },
-          data: { image: user.image },
-        })
+      } else {
+        // A banned user is denied entry regardless of provider.
+        if (existing.banned) {
+          return false
+        }
+        if (!existing.image && user.image) {
+          // Backfill an avatar for a previously password-only account.
+          await prisma.user.update({
+            where: { email },
+            data: { image: user.image },
+          })
+        }
       }
 
       return true
     },
     jwt: async ({ token, user, account }) => {
+      // --- Resolve our cuid onto the token on sign-in ---
       // On the credentials path, `user.id` is already our cuid.
       if (account?.provider === "credentials" && user) {
         token.id = user.id
-        return token
-      }
-
-      // On an OAuth sign-in, `user.id` is the provider's id, not our cuid —
-      // resolve the real User row by email and store our id on the token.
-      if (user?.email) {
+      } else if (user?.email) {
+        // On an OAuth sign-in, `user.id` is the provider's id, not our cuid —
+        // resolve the real User row by email and store our id on the token.
         const dbUser = await prisma.user.findUnique({
           where: { email: user.email },
         })
@@ -115,11 +131,30 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
       }
 
+      // --- Load / refresh RBAC + ban state ---
+      // Refresh on sign-in (user present) or whenever the cached copy is stale,
+      // so moderation actions and permission grants take effect within RBAC_TTL_MS
+      // rather than requiring the user to log out and back in.
+      const stale =
+        typeof token.rbacRefreshedAt !== "number" ||
+        Date.now() - token.rbacRefreshedAt > RBAC_TTL_MS
+      if (token.id && (user || stale)) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { permissions: true, banned: true },
+        })
+        token.permissions = dbUser?.permissions ?? []
+        token.banned = dbUser?.banned ?? false
+        token.rbacRefreshedAt = Date.now()
+      }
+
       return token
     },
     session: async ({ session, token }) => {
       if (session.user) {
         session.user.id = token.id as string
+        session.user.permissions = (token.permissions as Permission[]) ?? []
+        session.user.banned = (token.banned as boolean) ?? false
       }
       return session
     },

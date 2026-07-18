@@ -10,7 +10,11 @@
     "piston:up": "docker compose -f docker-compose.piston.yml up -d",
     "piston:down": "docker compose -f docker-compose.piston.yml down",
     "piston:logs": "docker compose -f docker-compose.piston.yml logs -f",
-    "piston:setup": "node scripts/setup-piston.mjs"
+    "piston:setup": "node scripts/setup-piston.mjs",
+    "admin:bootstrap": "tsx scripts/bootstrap-admin.mts",
+    "admin:reset-password": "tsx scripts/reset-password.mts",
+    "admin:whoami": "tsx scripts/whoami-admin.mts",
+    "admin:check-password": "tsx scripts/check-password.mts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.8",
@@ -27,6 +31,7 @@
     "motion": "^12.42.2",
     "next": "16.2.10",
     "next-auth": "^5.0.0-beta.31",
+    "nodemailer": "^7.0.13",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-icons": "^5.7.0",
@@ -40,6 +45,7 @@
     "@tailwindcss/postcss": "^4",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
+    "@types/nodemailer": "^7.0.12",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",

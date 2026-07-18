@@ -4,7 +4,7 @@ import type { ComponentType, ReactNode } from "react"
 import Link from "next/link"
 import { signOut } from "next-auth/react"
 import { motion, useReducedMotion, AnimatePresence } from "motion/react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   ListChecks,
   Gauge,
@@ -34,18 +34,49 @@ import { AuthModal } from "./AuthModal"
  * globals.css, so the product UI keeps its true-black all-mono identity.
  *
  * `isLoggedIn` decides where the primary CTAs point (auth vs. topics).
+ * `initialAuthMode` (from /login or /signup redirecting to /?auth=...) auto-opens
+ * the AuthModal; `callbackUrl` is where a successful auth should land.
  */
-export function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
+export function LandingPage({
+  isLoggedIn,
+  initialAuthMode = null,
+  callbackUrl,
+}: {
+  isLoggedIn: boolean
+  initialAuthMode?: "login" | "signup" | null
+  callbackUrl?: string
+}) {
   const startHref = isLoggedIn ? "/topics" : "/signup"
   const startLabel = isLoggedIn ? "Continue" : "Get Started"
 
-  const [authOpen, setAuthOpen] = useState(false)
-  const [authMode, setAuthMode] = useState<"login" | "signup">("login")
+  // Open the modal immediately when arriving via /login or /signup (which
+  // redirect here with ?auth=login|signup). Ignored for logged-in visitors.
+  const [authOpen, setAuthOpen] = useState(
+    !isLoggedIn && initialAuthMode !== null,
+  )
+  const [authMode, setAuthMode] = useState<"login" | "signup">(
+    initialAuthMode ?? "login",
+  )
 
   const openAuth = (mode: "login" | "signup") => {
     setAuthMode(mode)
     setAuthOpen(true)
   }
+
+  // If the auth query param changes after mount (client nav to /login etc.),
+  // reflect it. Also clean the ?auth= param from the URL once handled so a
+  // refresh or back-nav doesn't re-pop the modal unexpectedly.
+  useEffect(() => {
+    if (!isLoggedIn && initialAuthMode) {
+      setAuthMode(initialAuthMode)
+      setAuthOpen(true)
+      const url = new URL(window.location.href)
+      if (url.searchParams.has("auth")) {
+        url.searchParams.delete("auth")
+        window.history.replaceState(null, "", url.pathname + url.search)
+      }
+    }
+  }, [isLoggedIn, initialAuthMode])
 
   return (
     <div className="landing min-h-screen overflow-x-clip">
@@ -68,6 +99,7 @@ export function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
       <AuthModal
         open={authOpen}
         mode={authMode}
+        callbackUrl={callbackUrl}
         onClose={() => setAuthOpen(false)}
         onModeChange={setAuthMode}
       />

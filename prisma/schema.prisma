@@ -6,6 +6,22 @@ datasource db {
   provider = "postgresql"
 }
 
+// Granular admin capabilities. Users hold zero or more of these; any non-empty
+// set makes them staff. Checked server-side on every admin route/action (the
+// middleware gate is only defense-in-depth). See src/lib/authz.ts.
+enum Permission {
+  VIEW_ADMIN        // can open the admin panel at all
+  VIEW_USERS        // list/inspect users
+  VIEW_PII          // see emails and other identifying fields
+  VIEW_SUBMISSIONS  // inspect any user's submissions
+  VIEW_ANTICHEAT    // access the anti-cheat review queue
+  VIEW_AUDIT        // read the audit log
+  BAN_USER          // ban / unban users
+  REVOKE_SUBMISSION // revoke / restore submissions
+  WARN_USER         // issue warnings
+  MANAGE_ADMINS     // grant/revoke permissions on other users
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -18,6 +34,13 @@ model User {
   location      String?
   githubHandle  String?
   website       String?
+  // --- Admin / RBAC ---
+  // Granular capabilities. Empty for normal users; any entry marks staff.
+  permissions   Permission[] @default([])
+  // --- Moderation state (soft + reversible; nothing is hard-deleted) ---
+  banned        Boolean   @default(false)
+  bannedAt      DateTime?
+  bannedReason  String?   @db.Text
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   accounts      Account[]
@@ -26,6 +49,11 @@ model User {
   progress      UserProgress[]
   taskClaims    TaskClaim[]
   badges        UserBadge[]
+  // Warnings received, and warnings/audit entries this user authored as staff.
+  warnings        Warning[]  @relation("WarningTarget")
+  warningsIssued  Warning[]  @relation("WarningIssuer")
+  auditLogs       AuditLog[] @relation("AuditActor")
+  passwordResetTokens PasswordResetToken[]
 
   @@map("users")
 }
@@ -60,6 +88,69 @@ model UserBadge {
   @@unique([userId, badgeKey])
   @@index([userId])
   @@map("user_badges")
+}
+
+// A warning issued to a user by staff. Soft record; kept for history even after
+// acknowledgement. Every issuance also writes an AuditLog row.
+model Warning {
+  id             String    @id @default(cuid())
+  userId         String
+  user           User      @relation("WarningTarget", fields: [userId], references: [id], onDelete: Cascade)
+  issuedByUserId String
+  issuedBy       User      @relation("WarningIssuer", fields: [issuedByUserId], references: [id], onDelete: Cascade)
+  reason         String    @db.Text
+  acknowledgedAt DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@index([userId])
+  @@map("warnings")
+}
+
+// Append-only audit trail for every privileged state change (ban, revoke, warn,
+// permission grant). Never updated or deleted from app code.
+enum AuditAction {
+  BAN_USER
+  UNBAN_USER
+  REVOKE_SUBMISSION
+  RESTORE_SUBMISSION
+  WARN_USER
+  GRANT_PERMISSIONS
+  REVOKE_PERMISSIONS
+}
+
+model AuditLog {
+  id          String      @id @default(cuid())
+  actorUserId String
+  actor       User        @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: Cascade)
+  action      AuditAction
+  targetType  String      // "user" | "submission"
+  targetId    String
+  reason      String?     @db.Text
+  metadata    Json?
+  ipAddress   String?
+  createdAt   DateTime    @default(now())
+
+  @@index([actorUserId])
+  @@index([targetType, targetId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// A single-use password-reset token. We store only the SHA-256 *hash* of the
+// token, never the token itself, so a database leak cannot be used to reset
+// passwords. The raw token lives only in the emailed link. Expires quickly and
+// is deleted (or marked used) on redemption.
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("password_reset_tokens")
 }
 
 model Account {
@@ -168,8 +259,15 @@ model Submission {
   // problem's canary token (see src/lib/anticheat.ts). Not enforced/blocked,
   // just recorded for later review -- a detect-and-discourage signal, not proof.
   suspectedAiPasted Boolean  @default(false)
+  // --- Moderation (soft): revoked submissions are hidden from public views
+  // (profile, leaderboards, problem history) but never deleted, and can be
+  // restored. Set only from the admin panel via an audited action.
+  revoked       Boolean   @default(false)
+  revokedAt     DateTime?
+  revokedReason String?   @db.Text
   createdAt   DateTime @default(now())
 
+  @@index([suspectedAiPasted])
   @@map("submissions")
 }
 

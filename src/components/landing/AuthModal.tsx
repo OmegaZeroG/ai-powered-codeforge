@@ -13,14 +13,18 @@ type Mode = "login" | "signup"
 export function AuthModal({
   open,
   mode,
+  callbackUrl,
   onClose,
   onModeChange,
 }: {
   open: boolean
   mode: Mode
+  callbackUrl?: string
   onClose: () => void
   onModeChange: (mode: Mode) => void
 }) {
+  // Where to send the user after a successful auth. Falls back to the app home.
+  const dest = callbackUrl && callbackUrl.startsWith("/") ? callbackUrl : "/"
   const router = useRouter()
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
@@ -30,11 +34,16 @@ export function AuthModal({
   const [oauthLoading, setOauthLoading] = useState<"github" | "google" | null>(
     null
   )
+  // "Forgot password?" is a sub-view of the login tab.
+  const [forgotView, setForgotView] = useState(false)
+  const [forgotSent, setForgotSent] = useState(false)
 
   // Reset transient state whenever the modal opens or the tab switches.
   useEffect(() => {
     setError(null)
     setPassword("")
+    setForgotView(false)
+    setForgotSent(false)
   }, [mode, open])
 
   // Close on Escape and lock body scroll while open.
@@ -54,7 +63,7 @@ export function AuthModal({
     setError(null)
     setOauthLoading(provider)
     // Full-page redirect to the provider; NextAuth returns to callbackUrl.
-    signIn(provider, { callbackUrl: "/" })
+    signIn(provider, { callbackUrl: dest })
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -94,10 +103,31 @@ export function AuthModal({
       }
 
       onClose()
-      router.push("/")
+      router.push(dest)
       router.refresh()
     } catch {
       setError("Something went wrong. Please try again.")
+      setIsLoading(false)
+    }
+  }
+
+  async function handleForgot(e: FormEvent) {
+    e.preventDefault()
+    setError(null)
+    setIsLoading(true)
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      })
+      // The endpoint always returns ok (no account enumeration); show a
+      // neutral confirmation regardless.
+      await res.json().catch(() => null)
+      setForgotSent(true)
+    } catch {
+      setError("Something went wrong. Please try again.")
+    } finally {
       setIsLoading(false)
     }
   }
@@ -180,7 +210,76 @@ export function AuthModal({
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4 px-7 pb-7 pt-6">
+            {forgotView && (
+              <form onSubmit={handleForgot} className="space-y-4 px-7 pb-7 pt-6">
+                <div>
+                  <h2 className="font-sans text-xl font-medium tracking-tight">
+                    Reset your password
+                  </h2>
+                  <p className="mt-1 text-[13px] text-muted-foreground">
+                    {forgotSent
+                      ? "Check your inbox for a reset link."
+                      : "Enter your email and we'll send you a reset link."}
+                  </p>
+                </div>
+
+                {forgotSent ? (
+                  <p className="rounded-md border border-border bg-background/50 px-3 py-3 text-[13px] text-muted-foreground">
+                    If an account exists for{" "}
+                    <span className="text-foreground">{email}</span>, a reset link
+                    is on its way. The link is valid for 30 minutes.
+                  </p>
+                ) : (
+                  <>
+                    <div>
+                      <label className="mb-1.5 block text-[13px] text-muted-foreground">
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full rounded-md border border-border bg-background/50 px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary/60"
+                        placeholder="jane@example.com"
+                      />
+                    </div>
+
+                    {error && (
+                      <p className="text-[13px] text-destructive">{error}</p>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={isLoading}
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary py-2.5 text-sm font-medium text-primary-foreground transition-all hover:brightness-110 disabled:opacity-60"
+                    >
+                      {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                      {isLoading ? "Sending…" : "Send reset link"}
+                    </button>
+                  </>
+                )}
+
+                <p className="text-center text-[13px] text-muted-foreground">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForgotView(false)
+                      setForgotSent(false)
+                      setError(null)
+                    }}
+                    className="font-medium text-primary hover:underline"
+                  >
+                    Back to log in
+                  </button>
+                </p>
+              </form>
+            )}
+
+            <form
+              onSubmit={handleSubmit}
+              className={`space-y-4 px-7 pb-7 pt-6 ${forgotView ? "hidden" : ""}`}
+            >
               <div>
                 <h2 className="font-sans text-xl font-medium tracking-tight">
                   {mode === "login" ? "Welcome back" : "Create your account"}
@@ -269,9 +368,23 @@ export function AuthModal({
               </div>
 
               <div>
-                <label className="mb-1.5 block text-[13px] text-muted-foreground">
-                  Password
-                </label>
+                <div className="mb-1.5 flex items-center justify-between">
+                  <label className="text-[13px] text-muted-foreground">
+                    Password
+                  </label>
+                  {mode === "login" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setForgotView(true)
+                        setError(null)
+                      }}
+                      className="text-[12px] font-medium text-primary hover:underline"
+                    >
+                      Forgot password?
+                    </button>
+                  )}
+                </div>
                 <input
                   type="password"
                   required

@@ -16,6 +16,10 @@ export type Verdict =
   | "TIME_LIMIT_EXCEEDED"
   | "COMPILE_ERROR"
 
+// Lifecycle of a submission in the async judging pipeline (mirrors the Prisma
+// enum SubmissionStatus). QUEUED/RUNNING are transient; DONE/ERROR terminal.
+export type SubmissionStatus = "QUEUED" | "RUNNING" | "DONE" | "ERROR"
+
 export type ProgressStatus = "NOT_STARTED" | "IN_PROGRESS" | "SOLVED"
 
 export interface Topic {
@@ -73,9 +77,19 @@ export interface SubmitRequest {
 }
 
 export interface SubmitResponse {
+  status: SubmissionStatus
   verdict: Verdict
   testResults: TestCaseResult[]
   runtimeMs: number | null
+  // Set only when status is ERROR: the judge itself failed (e.g. Piston
+  // unreachable) rather than the code producing a verdict.
+  error?: string | null
+}
+
+// Immediate response from POST /api/execute: the job is queued, not yet judged.
+export interface EnqueueResponse {
+  submissionId: string
+  status: SubmissionStatus
 }
 
 export interface AIRequest {

@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
+    "judge": "tsx scripts/judge-worker.mts",
+    "judge:backfill": "tsx scripts/backfill-submission-status.mts",
     "piston:up": "docker compose -f docker-compose.piston.yml up -d",
     "piston:down": "docker compose -f docker-compose.piston.yml down",
     "piston:logs": "docker compose -f docker-compose.piston.yml logs -f",

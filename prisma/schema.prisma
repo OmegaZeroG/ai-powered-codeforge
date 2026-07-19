@@ -255,6 +255,19 @@ enum Verdict {
   COMPILE_ERROR
 }
 
+// Lifecycle of a submission in the async judging pipeline. A submission is
+// created QUEUED (verdict PENDING), a worker flips it to RUNNING while it
+// executes test cases through Piston, then DONE once a verdict is written.
+// ERROR is terminal and means the judge itself failed (e.g. Piston
+// unreachable) after exhausting retries -- distinct from a WRONG_ANSWER
+// verdict, which is a real result about the user's code.
+enum SubmissionStatus {
+  QUEUED
+  RUNNING
+  DONE
+  ERROR
+}
+
 model Submission {
   id          String   @id @default(cuid())
   userId      String
@@ -264,6 +277,17 @@ model Submission {
   code        String   @db.Text
   language    String
   verdict     Verdict  @default(PENDING)
+  // --- Async judging pipeline (see enum SubmissionStatus, src/lib/queue.ts).
+  // A submission is enqueued QUEUED; a worker claims it (FOR UPDATE SKIP
+  // LOCKED), runs it, and writes the verdict + status=DONE. attempts counts
+  // judge retries; a transient Piston failure re-queues until MAX_ATTEMPTS,
+  // then status=ERROR with queueError set (never a false WRONG_ANSWER).
+  status      SubmissionStatus @default(QUEUED)
+  attempts    Int      @default(0)
+  workerId    String?
+  startedAt   DateTime? @db.Timestamptz(3)
+  judgedAt    DateTime? @db.Timestamptz(3)
+  queueError  String?   @db.Text
   testResults Json?
   runtimeMs   Int?
   // Heuristic anti-cheat signal: true if the submitted code contains this
@@ -285,6 +309,8 @@ model Submission {
 
   @@index([suspectedAiPasted])
   @@index([contestId, userId])
+  // Drives the worker's claim query: oldest QUEUED job first.
+  @@index([status, createdAt])
   @@map("submissions")
 }
 

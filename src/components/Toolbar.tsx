@@ -20,6 +20,7 @@ import {
   RotateCcw,
   Check,
   ChevronDown,
+  List,
 } from "lucide-react"
 
 const LANGUAGES: { value: Language; label: string }[] = [
@@ -116,6 +117,16 @@ export function Toolbar() {
           </span>
         </Link>
         <span className="w-px h-6 bg-edge" aria-hidden />
+
+        {/* Problems — back to the topic/problem browser */}
+        <Link
+          href="/topics"
+          className="flex items-center gap-1.5 text-sm px-3.5 py-1.5 rounded-lg bg-raised text-fg-dim hover:text-white hover:bg-raised-bright border border-edge transition-colors"
+          title="Browse all problems"
+        >
+          <List size={14} />
+          Problems
+        </Link>
 
         {/* Language selector */}
         <select

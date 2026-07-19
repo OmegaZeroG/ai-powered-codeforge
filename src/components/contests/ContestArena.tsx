@@ -16,7 +16,7 @@ import type { editor as MonacoEditorNS } from "monaco-editor"
 import { defineCodeForgeTheme } from "@/components/Editor"
 import { ContestCountdown } from "@/components/contests/ContestCountdown"
 import { DifficultyTag } from "@/components/Verdict"
-import type { Language, SubmitResponse, Difficulty } from "@/types"
+import type { Language, SubmitResponse, EnqueueResponse, Difficulty } from "@/types"
 import {
   Play,
   CheckCircle2,
@@ -28,6 +28,7 @@ import {
   Loader2,
 } from "lucide-react"
 import { endContest, enterContest } from "@/app/contests/actions"
+import { pollSubmission } from "@/lib/poll"
 
 export type ArenaProblem = {
   id: string
@@ -90,6 +91,8 @@ export function ContestArena({
     {},
   )
   const [runningId, setRunningId] = useState<string | null>(null)
+  // Transient pipeline status per problem ("Queued..." / "Judging...").
+  const [statusById, setStatusById] = useState<Record<string, string>>({})
   const [solved, setSolved] = useState<Set<string>>(new Set(initialSolvedIds))
   const [pasteBlocked, setPasteBlocked] = useState(false)
   const [confirmingEnd, setConfirmingEnd] = useState(false)
@@ -170,7 +173,11 @@ export function ContestArena({
     const problem = active
     setRunningId(problem.id)
     setResultById((prev) => ({ ...prev, [problem.id]: null }))
+    setStatusById((prev) => ({ ...prev, [problem.id]: "Queued..." }))
     try {
+      // Enqueue: the route validates the contest window + membership and
+      // returns immediately. createdAt (set at enqueue) is what the leaderboard
+      // penalty/timing math uses, so judging a beat later stays fair.
       const res = await fetch("/api/execute", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -185,7 +192,15 @@ export function ContestArena({
         const err = await res.json().catch(() => ({ error: "Request failed" }))
         throw new Error(err.error || "Request failed")
       }
-      const data: SubmitResponse = await res.json()
+      const { submissionId }: EnqueueResponse = await res.json()
+
+      const data = await pollSubmission(submissionId, {
+        onStatus: (st) =>
+          setStatusById((prev) => ({
+            ...prev,
+            [problem.id]: st === "RUNNING" ? "Judging..." : "Queued...",
+          })),
+      })
       setResultById((prev) => ({ ...prev, [problem.id]: data }))
       if (data.verdict === "ACCEPTED") {
         setSolved((prev) => new Set(prev).add(problem.id))
@@ -197,6 +212,7 @@ export function ContestArena({
       setResultById((prev) => ({
         ...prev,
         [problem.id]: {
+          status: "ERROR",
           verdict: "RUNTIME_ERROR",
           testResults: [
             {
@@ -212,11 +228,17 @@ export function ContestArena({
       }))
     } finally {
       setRunningId(null)
+      setStatusById((prev) => {
+        const next = { ...prev }
+        delete next[problem.id]
+        return next
+      })
     }
   }, [active, activeCode, contest.id, ended, language, router, runningId])
 
   const activeResult = resultById[active.id] ?? null
   const isRunningActive = runningId === active.id
+  const activeStatus = statusById[active.id]
   const solvedCount = solved.size
 
   const endRound = useCallback(async () => {
@@ -454,7 +476,7 @@ export function ContestArena({
               )}
               {isRunningActive && (
                 <p className="animate-pulse text-fg-muted">
-                  Running test cases...
+                  {activeStatus ?? "Running test cases..."}
                 </p>
               )}
               {activeResult && (

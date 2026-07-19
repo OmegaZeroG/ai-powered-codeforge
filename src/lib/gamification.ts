@@ -659,9 +659,17 @@ export async function syncBadges(userId: string): Promise<BadgeKey[]> {
   const fresh = earnedNow.filter((k) => !have.has(k))
   if (fresh.length === 0) return []
 
-  await prisma.userBadge.createMany({
-    data: fresh.map((badgeKey) => ({ userId, badgeKey })),
-    skipDuplicates: true,
-  })
+  // Insert per-badge with raw INSERT ... ON CONFLICT DO NOTHING rather than
+  // prisma.createMany: Prisma 7's client engine wraps createMany in an internal
+  // transaction, which the Neon HTTP adapter rejects ("Transactions are not
+  // supported in HTTP mode"). `fresh` is at most a handful of badges, so a few
+  // single-statement inserts are cheap. ids are generated app-side (crypto.randomUUID).
+  for (const badgeKey of fresh) {
+    await prisma.$executeRaw`
+      INSERT INTO "user_badges" ("id", "userId", "badgeKey", "earnedAt")
+      VALUES (${crypto.randomUUID()}, ${userId}, ${badgeKey}, NOW())
+      ON CONFLICT ("userId", "badgeKey") DO NOTHING
+    `
+  }
   return fresh
 }

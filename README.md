@@ -91,12 +91,34 @@ The judge, tutor, and moderation flows are deliberately isolated. Business logic
 
 ## The judge pipeline
 
-A submission to `POST /api/execute` flows through:
+Judging is **asynchronous**: the web request never runs code. Submissions go on a Postgres-backed queue and a standalone worker process judges them, so the API stays fast, Piston load is bounded, and transient sandbox failures retry instead of being recorded as wrong answers.
 
-1. **Auth & ban gate** — the ban state is re-read from the DB (not trusted from the up-to-60s-stale JWT) so a just-issued ban blocks the very next submit; an expired timed ban is a no-op.
-2. **Contest validation** (if `contestId` is present) — the round must be live and actually contain the problem, so a stale or forged contest id can't attribute a solve.
-3. **Per-test-case execution** — each test case's input is piped as stdin to the code in the Piston sandbox (`compile_timeout` 10s, `run_timeout` 5s); `SIGKILL` → TLE, non-zero compile → CE, non-zero run → RE, output mismatch → WA. First failure short-circuits the verdict.
-4. **Persistence & side effects** — the `Submission` is stored with per-test results and runtime; `UserProgress` is updated; canary detection flags suspected AI-pasted code; badges are synced.
+```
+POST /api/execute ──► validate ──► INSERT submission {status: QUEUED} ──► return { submissionId }
+                                                │
+        judge worker (npm run judge) ◄──────────┘  claims oldest QUEUED via
+        FOR UPDATE SKIP LOCKED, N lanes in parallel (JUDGE_CONCURRENCY)
+                                                │
+        runs test cases through Piston ─► writes verdict + status: DONE
+                                                │
+client polls GET /api/submissions/[id] ◄────────┘  until DONE / ERROR, renders result
+```
+
+**Enqueue** (`POST /api/execute`, `src/app/api/execute/route.ts`):
+1. **Auth & ban gate** — ban state is re-read from the DB (not the up-to-60s-stale JWT) so a just-issued ban blocks the next submit; an expired timed ban is a no-op.
+2. **Contest validation** (if `contestId` present) — the round must be live and actually contain the problem, so a stale/forged id can't attribute a solve.
+3. **Enqueue** — the `Submission` is created `QUEUED` / `PENDING` with the canary flag; `createdAt` is stamped here and is the official submit time the contest leaderboard's penalty/timing math keys off, so judging a beat later stays fair. Returns `{ submissionId }` immediately.
+
+**Worker** (`npm run judge`, `scripts/judge-worker.mts` → `src/lib/queue.ts` + `src/lib/judge.ts`):
+4. **Claim** — `claimNextJob` atomically flips the oldest `QUEUED` row to `RUNNING` with `FOR UPDATE SKIP LOCKED` (a single statement, safe on the Neon HTTP adapter). `JUDGE_CONCURRENCY` lanes claim distinct rows, which is the backpressure/concurrency limit.
+5. **Per-test-case execution** — each test case's input is piped as stdin to the code in Piston (`compile_timeout` 10s, `run_timeout` 5s); `SIGKILL` → TLE, non-zero compile → CE, non-zero run → RE, mismatch → WA. First failure short-circuits.
+6. **Persistence & side effects** — verdict + per-test results + runtime are written with `status: DONE`; `UserProgress` is updated; badges are synced. A **transient** Piston failure re-queues the job (up to `MAX_ATTEMPTS`) and only then becomes a terminal `ERROR` — distinct from a `WRONG_ANSWER`, so infra hiccups never count against the user. A worker killed mid-judge leaves the row `RUNNING`; a stale-sweeper returns it to the queue.
+
+The client (`OutputPanel`, `ContestArena`) enqueues then polls `GET /api/submissions/[id]` via `src/lib/poll.ts`, showing *Queued… / Judging…* until a terminal state.
+
+> **Scaling note:** this is the classic "design an online judge" shape. The Postgres queue swaps cleanly for Redis+BullMQ or SQS at scale; the worker is already horizontally scalable (multiple processes claim safely via `SKIP LOCKED`).
+>
+> **Deploy note:** the Next.js app is serverless-friendly (Vercel), but `npm run judge` is a long-lived process and won't run on Vercel's request-scoped functions — host it somewhere always-on (Railway / Render / Fly / a small VM) pointed at the same `DATABASE_URL` and `PISTON_URL`. No worker running ⇒ submissions stay `QUEUED` forever.
 
 ---
 
@@ -137,11 +159,14 @@ npx prisma db seed
 npm run piston:up
 npm run piston:setup
 
-# 5. Run the app
-npm run dev
+# 5. Run the app + judge worker (separate terminals)
+npm run dev          # terminal A — Next.js
+npm run judge        # terminal B — standalone judge worker (see "The judge pipeline")
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
+
+> The judge worker is a **separate long-running process** — submissions sit `QUEUED` and never get a verdict without it. See [The judge pipeline](#the-judge-pipeline).
 
 To grant yourself admin access, sign in once, add your email to `ADMIN_EMAILS` in `.env`, then run `npm run admin:bootstrap`.
 
@@ -198,6 +223,7 @@ Copy `.env.example` to `.env` and fill in:
 | `NEXTAUTH_SECRET` | NextAuth JWT signing secret |
 | `NEXTAUTH_URL` | App base URL (`http://localhost:3000` in dev) |
 | `PISTON_URL` | Piston API base (defaults to local Docker) |
+| `JUDGE_CONCURRENCY` | Judge worker lanes — how many submissions it judges in parallel (default `4`) |
 | `ANTICHEAT_SECRET` | Secret used to derive per-problem canary tokens |
 | `GOOGLE_GENERATIVE_AI_API_KEY` | Gemini key for the AI tutor ([free tier](https://aistudio.google.com/apikey)) |
 | `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | GitHub OAuth (optional) |
@@ -216,6 +242,8 @@ Copy `.env.example` to `.env` and fill in:
 | `npm run admin:reset-password` | Reset a user's password from the CLI |
 | `npm run admin:check-password` | Verify a password hash |
 | `npm run piston:up` / `:down` / `:logs` / `:setup` | Manage the Piston sandbox |
+| `npm run judge` | Start the standalone judge worker (claims `QUEUED` submissions and judges them). Required for any verdict to appear; run it alongside `npm run dev`. Honors `JUDGE_CONCURRENCY`. |
+| `npm run judge:backfill` | One-time after adopting the async pipeline: marks already-judged historical submissions `DONE` so the worker doesn't re-judge them. Run once after `prisma db push` / `migrate`, before the worker. Idempotent. |
 
 ---
 

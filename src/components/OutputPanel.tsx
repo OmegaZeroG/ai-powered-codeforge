@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useEditorStore } from "@/stores/editorStore"
 import { useAIStore } from "@/stores/aiStore"
@@ -11,8 +12,9 @@ import {
   XCircle,
   Terminal,
 } from "lucide-react"
-import { SubmitResponse } from "@/types"
+import { EnqueueResponse } from "@/types"
 import { writeDraft } from "@/lib/draft"
+import { pollSubmission } from "@/lib/poll"
 import { VerdictStamp, AcceptedStamp } from "@/components/Verdict"
 
 export function OutputPanel() {
@@ -30,6 +32,8 @@ export function OutputPanel() {
   } = useEditorStore()
   const { isPanelOpen, togglePanel } = useAIStore()
   const router = useRouter()
+  // Transient pipeline status ("Queued..." / "Judging...") shown while polling.
+  const [statusText, setStatusText] = useState<string | null>(null)
 
   const handleRun = async () => {
     if (!problemId) return
@@ -41,7 +45,9 @@ export function OutputPanel() {
     }
     setIsRunning(true)
     setResult(null)
+    setStatusText("Queued...")
     try {
+      // Enqueue the submission; the route returns immediately with an id.
       const res = await fetch("/api/execute", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -51,16 +57,23 @@ export function OutputPanel() {
         const err = await res.json().catch(() => ({ error: "Request failed" }))
         throw new Error(err.error || "Request failed")
       }
-      const data: SubmitResponse = await res.json()
+      const { submissionId }: EnqueueResponse = await res.json()
+
+      // Poll until the worker judges it. onStatus drives the "Queued.../
+      // Judging..." text; pollSubmission resolves on DONE or ERROR.
+      const data = await pollSubmission(submissionId, {
+        onStatus: (st) =>
+          setStatusText(st === "RUNNING" ? "Judging..." : "Queued..."),
+      })
       setResult(data)
       // An accepted run just changed solved-status / streak / XP / tasks on the
-      // server (the route revalidated those pages). Refresh so this tab reflects
-      // it too, without the user needing a hard reload.
+      // server. Refresh so this tab reflects it too, without a hard reload.
       if (data.verdict === "ACCEPTED") {
         router.refresh()
       }
     } catch (error) {
       setResult({
+        status: "ERROR",
         verdict: "RUNTIME_ERROR",
         testResults: [
           {
@@ -75,6 +88,7 @@ export function OutputPanel() {
       })
     } finally {
       setIsRunning(false)
+      setStatusText(null)
     }
   }
 
@@ -131,7 +145,9 @@ export function OutputPanel() {
           </p>
         )}
         {isRunning && (
-          <p className="text-fg-muted animate-pulse">Running test cases...</p>
+          <p className="text-fg-muted animate-pulse">
+            {statusText ?? "Running test cases..."}
+          </p>
         )}
         {result && (
           <div className="space-y-3">

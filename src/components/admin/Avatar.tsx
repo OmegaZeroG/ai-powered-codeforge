@@ -22,8 +22,8 @@ export function Avatar({
       .toUpperCase() || "?"
 
   if (image) {
-    // eslint-disable-next-line @next/next/no-img-element
     return (
+      // eslint-disable-next-line @next/next/no-img-element
       <img
         src={image}
         alt=""

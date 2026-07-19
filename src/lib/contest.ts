@@ -36,7 +36,7 @@ export function nextContestSlot(from: Date = new Date()): Date {
   d.setHours(CONTEST_HOUR)
 
   // Days until the coming Sunday (0..6). If today is Sunday this is 0.
-  let delta = (CONTEST_DAY - d.getDay() + 7) % 7
+  const delta = (CONTEST_DAY - d.getDay() + 7) % 7
   d.setDate(d.getDate() + delta)
 
   // If that computed slot is not strictly in the future, jump a week.

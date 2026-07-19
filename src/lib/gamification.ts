@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma"
-import { Difficulty, Verdict } from "@prisma/client"
+import { Difficulty } from "@prisma/client"
 
 /* ---------------------------------------------------------------------------
    Gamification — rank, XP, badges, streak, solve calendar, daily/weekly tasks.

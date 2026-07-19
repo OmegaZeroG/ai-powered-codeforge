@@ -8,7 +8,7 @@
 // Copy protection: per the product decision, we BLOCK PASTE INTO the editor
 // (and drag-drop of text) so contestants can't paste in an external solution,
 // but we deliberately leave copy-OUT working so they can keep their own code.
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import MonacoEditor, { type Monaco } from "@monaco-editor/react"

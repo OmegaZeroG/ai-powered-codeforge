@@ -217,17 +217,27 @@ function ContestCardView({
               {locked ? (
                 <span className="text-sm text-muted-foreground/60">{label}</span>
               ) : (
-                <Link
-                  href={`/problems/${p.problem.slug}`}
-                  className="text-sm text-foreground/90 transition-colors hover:text-primary"
-                >
-                  {label}
-                </Link>
+                <span className="text-sm text-foreground/90">{label}</span>
               )}
             </li>
           )
         })}
       </ol>
+
+      {status !== "upcoming" ? (
+        <div className="mt-4">
+          <Link
+            href={`/contests/${contest.slug}`}
+            className={`inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-sm font-medium transition-opacity hover:opacity-90 ${
+              status === "live"
+                ? "bg-primary text-primary-foreground"
+                : "border border-border/70 text-foreground/90"
+            }`}
+          >
+            {status === "live" ? "Enter arena" : "View results"}
+          </Link>
+        </div>
+      ) : null}
     </article>
   )
 }

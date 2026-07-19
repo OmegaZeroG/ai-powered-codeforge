@@ -3,12 +3,14 @@ import Link from "next/link"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { loadGamification } from "@/lib/gamification"
+import { loadContestStats } from "@/lib/contest-stats"
 import { ProductNav } from "@/components/ProductNav"
 import {
   RankCard,
   BadgesCard,
   StreakCard,
   RecentSolvesCard,
+  ContestStatsCard,
 } from "@/components/gamification/GamificationCards"
 import { TasksCard } from "@/components/gamification/TasksCard"
 import { SolveCalendar } from "@/components/gamification/SolveCalendar"
@@ -49,7 +51,7 @@ export default async function ProfilePage() {
   const userId = session?.user?.id
   if (!userId) redirect("/login?callbackUrl=/profile")
 
-  const [user, game] = await Promise.all([
+  const [user, game, contestStats] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -67,6 +69,7 @@ export default async function ProfilePage() {
       },
     }),
     loadGamification(userId),
+    loadContestStats(userId),
   ])
 
   const banned = user ? isBanActive(user) : false
@@ -278,6 +281,7 @@ export default async function ProfilePage() {
             <aside className="space-y-6 lg:sticky lg:top-24 lg:self-start">
               <SolveCalendar solvedDays={game.solvedDays} />
               <StreakCard streak={game.streak} bestStreak={game.bestStreak} />
+              <ContestStatsCard stats={contestStats} />
             </aside>
           </div>
 

@@ -1,13 +1,14 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import MonacoEditor, { type Monaco } from "@monaco-editor/react"
-import { useEditorStore } from "@/stores/editorStore"
-import { draftKey } from "./Toolbar"
+import { useEditorStore, DEFAULT_CODE } from "@/stores/editorStore"
+import { readDraft, writeDraft } from "@/lib/draft"
+import type { Language } from "@/types"
 
 // Monaco theme derived from the CodeForge palette (globals.css tokens),
 // so the editor reads as part of the app instead of stock vs-dark.
-function defineCodeForgeTheme(monaco: Monaco) {
+export function defineCodeForgeTheme(monaco: Monaco) {
   monaco.editor.defineTheme("codeforge-dark", {
     base: "vs-dark",
     inherit: true,
@@ -49,20 +50,89 @@ function defineCodeForgeTheme(monaco: Monaco) {
 }
 
 export function Editor() {
-  const { code, language, fontSize, setCode, problemId } = useEditorStore()
+  const {
+    code,
+    language,
+    fontSize,
+    setCode,
+    problemId,
+    saveMode,
+    problemStarterCode,
+  } = useEditorStore()
+
+  // The untouched starter code for the CURRENT bucket. A draft equal to this
+  // carries no information, so we never persist it and treat it as "no draft"
+  // on read. `DEFAULT_CODE` is the fallback template shown before a problem's
+  // starter code loads (or in the scratch editor) — we guard against saving it
+  // too, since that transient value used to corrupt drafts during mount.
+  const pristine = problemStarterCode?.[language] ?? DEFAULT_CODE[language]
+  const isPristine = (c: string) =>
+    c === pristine || c === DEFAULT_CODE[language]
 
   // Restore a saved draft (if any) whenever the problem or language changes.
   // The store has just set starter code for this problem+language, so we only
-  // override it when the user has a saved draft for that exact bucket.
+  // override it when the user has a real saved draft for that exact bucket.
+  //
+  // "Save on switch" also lives here: before we move to the new bucket we flush
+  // the OUTGOING bucket's code, so nothing is lost when you change language or
+  // problem. The refs track what the previous bucket was.
+  const prevBucket = useRef<{
+    problemId: string | null
+    language: Language
+    code: string
+    pristine: string
+  } | null>(null)
+  const codeRef = useRef(code)
+  const saveModeRef = useRef(saveMode)
+  codeRef.current = code
+  saveModeRef.current = saveMode
+
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(draftKey(problemId, language))
-      if (saved !== null) setCode(saved)
-    } catch {
-      // Storage unavailable — keep the starter code.
+    // Flush the outgoing bucket first (save-on-switch), but only if it held
+    // real edits — never persist the untouched starter/default.
+    const prev = prevBucket.current
+    if (
+      prev &&
+      saveModeRef.current === "switch" &&
+      (prev.problemId !== problemId || prev.language !== language)
+    ) {
+      writeDraft(prev.problemId, prev.language, prev.code, prev.pristine)
+    }
+
+    const saved = readDraft(problemId, language, pristine)
+    // Self-heal drafts corrupted before the write-guard existed: an old draft
+    // may hold the default template (which differs from this problem's real
+    // starter). Discard it so the real starter code shows through.
+    const restored =
+      saved !== null && saved !== DEFAULT_CODE[language] ? saved : null
+    if (restored !== null) setCode(restored)
+
+    prevBucket.current = {
+      problemId,
+      language,
+      code: restored ?? codeRef.current,
+      pristine,
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [problemId, language])
+
+  // Keep the current bucket's code fresh on the ref so a later switch flushes
+  // the latest edits.
+  useEffect(() => {
+    if (prevBucket.current) prevBucket.current.code = code
+  }, [code])
+
+  // Auto-save: debounced write while typing, only in "auto" mode. Skips the
+  // pristine starter/default so the mount race can't persist a bogus draft.
+  useEffect(() => {
+    if (saveMode !== "auto") return
+    if (isPristine(code)) return
+    const t = setTimeout(() => {
+      writeDraft(problemId, language, code, pristine)
+    }, 800)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [code, saveMode, problemId, language])
 
   return (
     <div className="h-full w-full">

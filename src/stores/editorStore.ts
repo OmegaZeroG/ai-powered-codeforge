@@ -1,5 +1,6 @@
 import { create } from "zustand"
 import { Language, SubmitResponse } from "@/types"
+import { type SaveMode, DEFAULT_SAVE_MODE, writeSaveMode } from "@/lib/draft"
 
 interface EditorState {
   problemId: string | null
@@ -11,6 +12,7 @@ interface EditorState {
   isRunning: boolean
   result: SubmitResponse | null
   fontSize: number
+  saveMode: SaveMode
   setProblem: (
     problemId: string,
     starterCode: Partial<Record<Language, string>> | null,
@@ -24,9 +26,10 @@ interface EditorState {
   setResult: (result: SubmitResponse | null) => void
   setIsRunning: (isRunning: boolean) => void
   clearResult: () => void
+  setSaveMode: (mode: SaveMode) => void
 }
 
-const DEFAULT_CODE: Record<Language, string> = {
+export const DEFAULT_CODE: Record<Language, string> = {
   javascript: `// JavaScript\nconsole.log("Hello, CodeForge!")`,
   python: `# Python\nprint("Hello, CodeForge!")`,
   cpp: `// C++\n#include <iostream>\nint main() {\n  std::cout << "Hello, CodeForge!" << std::endl;\n  return 0;\n}`,
@@ -43,6 +46,9 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   isRunning: false,
   result: null,
   fontSize: 14,
+  // Start from the default; the Toolbar hydrates the persisted preference on
+  // mount (localStorage isn't available during SSR / store init).
+  saveMode: DEFAULT_SAVE_MODE,
 
   setProblem: (problemId, starterCode, statement = null, constraints = null) => {
     const { language } = get()
@@ -79,4 +85,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   setResult: (result) => set({ result }),
   setIsRunning: (isRunning) => set({ isRunning }),
   clearResult: () => set({ result: null }),
+  setSaveMode: (saveMode) => {
+    writeSaveMode(saveMode)
+    set({ saveMode })
+  },
 }))

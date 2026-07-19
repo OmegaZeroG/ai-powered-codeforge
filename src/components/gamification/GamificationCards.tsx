@@ -6,9 +6,11 @@ import {
   Trophy,
   Zap,
   Sparkles,
+  Swords,
   type LucideIcon,
 } from "lucide-react"
 import type { Badge, RankInfo } from "@/lib/gamification"
+import type { ContestStats } from "@/lib/contest-stats"
 
 /* ---------------------------------------------------------------------------
    Gamification cards — rank, badges, daily/weekly tasks, streak.
@@ -180,6 +182,72 @@ export function StreakCard({
           ? "Solve one problem today to keep it alive."
           : "Solve a problem today to start a streak."}
       </p>
+    </CardShell>
+  )
+}
+
+/* ------------------------------------------------------ Contest stats ---- */
+
+export function ContestStatsCard({ stats }: { stats: ContestStats }) {
+  const cells: { label: string; value: string }[] = [
+    { label: "Contests", value: String(stats.participated) },
+    { label: "Best rank", value: stats.bestRank ? `#${stats.bestRank}` : "—" },
+    { label: "Avg rank", value: stats.avgRank ? `#${stats.avgRank}` : "—" },
+    {
+      label: "Recent",
+      value: stats.recentRank ? `#${stats.recentRank}` : "—",
+    },
+  ]
+
+  return (
+    <CardShell>
+      <CardEyebrow
+        icon={Swords}
+        right={
+          <Link
+            href="/contests/history"
+            className="text-primary transition-colors hover:text-ember-glow"
+          >
+            All →
+          </Link>
+        }
+      >
+        Contests
+      </CardEyebrow>
+
+      {stats.participated === 0 ? (
+        <p className="mt-4 text-xs text-muted-foreground">
+          You haven&apos;t finished a contest yet. Your ranking history will show
+          up here once you compete.
+        </p>
+      ) : (
+        <>
+          <div className="mt-4 grid grid-cols-2 gap-2.5">
+            {cells.map((c) => (
+              <div
+                key={c.label}
+                className="rounded-xl border border-border/60 bg-secondary/40 p-3 text-center"
+              >
+                <div className="font-display text-2xl text-foreground">
+                  {c.value}
+                </div>
+                <div className="mt-0.5 font-mono text-[9px] uppercase tracking-wider text-muted-foreground">
+                  {c.label}
+                </div>
+              </div>
+            ))}
+          </div>
+          {stats.recent ? (
+            <Link
+              href={`/contests/${stats.recent.slug}`}
+              className="mt-3 block truncate text-center font-mono text-[11px] text-muted-foreground transition-colors hover:text-primary"
+              title={stats.recent.title}
+            >
+              Last: {stats.recent.title}
+            </Link>
+          ) : null}
+        </>
+      )}
     </CardShell>
   )
 }

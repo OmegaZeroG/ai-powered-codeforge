@@ -12,6 +12,7 @@ import {
   Terminal,
 } from "lucide-react"
 import { SubmitResponse } from "@/types"
+import { writeDraft } from "@/lib/draft"
 import { VerdictStamp, AcceptedStamp } from "@/components/Verdict"
 
 export function OutputPanel() {
@@ -24,12 +25,20 @@ export function OutputPanel() {
     language,
     setResult,
     setIsRunning,
+    saveMode,
+    problemStarterCode,
   } = useEditorStore()
   const { isPanelOpen, togglePanel } = useAIStore()
   const router = useRouter()
 
   const handleRun = async () => {
     if (!problemId) return
+    // "Save after each submission": persist the exact code we're about to run,
+    // so the last submitted version is always kept. The pristine guard skips a
+    // save when the code is still the untouched starter.
+    if (saveMode === "submit") {
+      writeDraft(problemId, language, code, problemStarterCode?.[language])
+    }
     setIsRunning(true)
     setResult(null)
     try {

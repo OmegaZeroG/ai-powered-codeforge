@@ -60,6 +60,7 @@ model User {
   warningsIssued  Warning[]  @relation("WarningIssuer")
   auditLogs       AuditLog[] @relation("AuditActor")
   contestsCreated Contest[]  @relation("ContestCreator")
+  contestEntries  ContestParticipant[]
   passwordResetTokens PasswordResetToken[]
 
   @@map("users")
@@ -275,9 +276,15 @@ model Submission {
   revoked       Boolean   @default(false)
   revokedAt     DateTime? @db.Timestamptz(3)
   revokedReason String?   @db.Text
+  // Set when the submission was made from a live contest page. Basis for the
+  // contest leaderboard (solves, then time + wrong-submission penalties).
+  // SetNull so deleting/cancelling a contest keeps the practice history.
+  contestId   String?
+  contest     Contest? @relation("ContestSubmissions", fields: [contestId], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now()) @db.Timestamptz(3)
 
   @@index([suspectedAiPasted])
+  @@index([contestId, userId])
   @@map("submissions")
 }
 
@@ -319,8 +326,10 @@ model Contest {
   // Who created it (staff). Kept for the audit trail / attribution.
   createdByUserId String?
   createdBy   User?            @relation("ContestCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  problems    ContestProblem[]
-  createdAt   DateTime         @default(now()) @db.Timestamptz(3)
+  problems     ContestProblem[]
+  submissions  Submission[]         @relation("ContestSubmissions")
+  participants ContestParticipant[]
+  createdAt    DateTime             @default(now()) @db.Timestamptz(3)
 
   @@index([startsAt])
   @@map("contests")
@@ -338,4 +347,23 @@ model ContestProblem {
   @@unique([contestId, problemId])
   @@index([contestId])
   @@map("contest_problems")
+}
+
+// One row per user who entered a contest. Records the moment they ended it
+// early (finishedAt), which locks their scoring clock at that instant instead
+// of running to the full contest end. A row is created on first entry; a NULL
+// finishedAt means they never clicked "End Contest" (their clock = contest end).
+model ContestParticipant {
+  id          String   @id @default(cuid())
+  contestId   String
+  contest     Contest  @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // When the user clicked "End Contest". NULL = still running / never ended.
+  finishedAt  DateTime? @db.Timestamptz(3)
+  createdAt   DateTime  @default(now()) @db.Timestamptz(3)
+
+  @@unique([contestId, userId])
+  @@index([contestId])
+  @@map("contest_participants")
 }

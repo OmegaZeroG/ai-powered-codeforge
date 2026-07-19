@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     )
   }
 
-  const { problemId, code, language } = await request.json()
+  const { problemId, code, language, contestId } = await request.json()
 
   if (!problemId || !code || !language) {
     return NextResponse.json(
@@ -45,6 +45,37 @@ export async function POST(request: Request) {
 
   if (!problem) {
     return NextResponse.json({ error: "Problem not found" }, { status: 404 })
+  }
+
+  // Contest submissions are tagged with contestId. Validate the round is live
+  // and that this problem is actually part of it, so a stale/forged contestId
+  // can't attribute an out-of-window or unrelated solve to a contest. A missing
+  // contestId is a normal practice submission and skips all of this.
+  if (contestId) {
+    const contest = await prisma.contest.findUnique({
+      where: { id: contestId },
+      select: { id: true, startsAt: true, endsAt: true },
+    })
+    if (!contest) {
+      return NextResponse.json({ error: "Contest not found" }, { status: 404 })
+    }
+    const now = Date.now()
+    if (now < contest.startsAt.getTime() || now >= contest.endsAt.getTime()) {
+      return NextResponse.json(
+        { error: "This contest is not currently accepting submissions." },
+        { status: 403 }
+      )
+    }
+    const inContest = await prisma.contestProblem.findUnique({
+      where: { contestId_problemId: { contestId, problemId } },
+      select: { problemId: true },
+    })
+    if (!inContest) {
+      return NextResponse.json(
+        { error: "This problem is not part of the contest." },
+        { status: 400 }
+      )
+    }
   }
 
   const startedAt = Date.now()
@@ -133,6 +164,7 @@ export async function POST(request: Request) {
       testResults,
       runtimeMs,
       suspectedAiPasted,
+      contestId: contestId ?? null,
     },
   })
 

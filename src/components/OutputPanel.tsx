@@ -12,7 +12,7 @@ import {
   XCircle,
   Terminal,
 } from "lucide-react"
-import { EnqueueResponse } from "@/types"
+import { EnqueueResponse, RunResponse } from "@/types"
 import { writeDraft } from "@/lib/draft"
 import { pollSubmission } from "@/lib/poll"
 import { VerdictStamp, AcceptedStamp } from "@/components/Verdict"
@@ -34,6 +34,11 @@ export function OutputPanel() {
   const router = useRouter()
   // Transient pipeline status ("Queued..." / "Judging...") shown while polling.
   const [statusText, setStatusText] = useState<string | null>(null)
+  // Scratchpad mode (no problem loaded): custom stdin + raw run output.
+  const [stdin, setStdin] = useState("")
+  const [runOutput, setRunOutput] = useState<RunResponse | null>(null)
+  const [runError, setRunError] = useState<string | null>(null)
+  const isScratchpad = !problemId
 
   const handleRun = async () => {
     if (!problemId) return
@@ -92,6 +97,54 @@ export function OutputPanel() {
     }
   }
 
+  // Scratchpad run: no problem, no test cases. Execute the code once against
+  // the custom stdin box and show raw stdout/stderr. Uses the synchronous
+  // /api/run endpoint (nothing to queue).
+  const handleScratchRun = async () => {
+    if (!code.trim()) return
+    setIsRunning(true)
+    setRunOutput(null)
+    setRunError(null)
+    setStatusText("Running...")
+    try {
+      const res = await fetch("/api/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, language, stdin }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data.error || "Run failed")
+      }
+      setRunOutput(data as RunResponse)
+    } catch (error) {
+      setRunError(
+        error instanceof Error ? error.message : "Run failed"
+      )
+    } finally {
+      setIsRunning(false)
+      setStatusText(null)
+    }
+  }
+
+  const handleClear = () => {
+    if (isScratchpad) {
+      setRunOutput(null)
+      setRunError(null)
+    } else {
+      clearResult()
+    }
+  }
+
+  const scratchHasError =
+    isScratchpad &&
+    (runError !== null ||
+      (runOutput !== null &&
+        (runOutput.compileFailed ||
+          runOutput.timedOut ||
+          runOutput.exitCode !== 0 ||
+          runOutput.stderr.trim() !== "")))
+
   const hasFailure =
     result && result.verdict !== "PENDING" && result.verdict !== "ACCEPTED"
 
@@ -107,7 +160,7 @@ export function OutputPanel() {
           {result && <VerdictStamp verdict={result.verdict} />}
         </div>
         <div className="flex items-center gap-2">
-          {hasFailure && (
+          {(hasFailure || scratchHasError) && (
             <button
               onClick={() => {
                 if (!isPanelOpen) togglePanel()
@@ -115,28 +168,112 @@ export function OutputPanel() {
               className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md bg-brand/10 text-brand hover:bg-brand/25 transition-colors"
             >
               <Sparkles size={12} />
-              Explain with AI
+              {isScratchpad ? "Review with AI" : "Explain with AI"}
             </button>
           )}
           <button
-            onClick={clearResult}
+            onClick={handleClear}
             className="text-fg-faint hover:text-fg-muted transition-colors"
           >
             <Trash2 size={14} />
           </button>
           <button
-            onClick={handleRun}
-            disabled={isRunning || !problemId}
+            onClick={isScratchpad ? handleScratchRun : handleRun}
+            disabled={isRunning || (isScratchpad ? !code.trim() : !problemId)}
             className="flex items-center gap-2 text-sm px-4 py-1.5 rounded-lg bg-brand hover:bg-brand-bright text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Play size={14} />
-            {isRunning ? "Running..." : "Submit"}
+            {isRunning ? "Running..." : isScratchpad ? "Run" : "Submit"}
           </button>
         </div>
       </div>
 
+      {/* Scratchpad: stdin box (no problem loaded) */}
+      {isScratchpad && (
+        <div className="shrink-0 px-4 pt-3">
+          <label className="block text-[10px] font-medium uppercase tracking-[0.15em] text-fg-faint mb-1.5">
+            Standard input (stdin)
+          </label>
+          <textarea
+            value={stdin}
+            onChange={(e) => setStdin(e.target.value)}
+            placeholder="Type input your program reads from stdin..."
+            rows={2}
+            spellCheck={false}
+            className="w-full resize-y bg-raised text-fg text-xs font-mono border border-edge rounded-lg px-3 py-2 focus:outline-none focus:border-brand placeholder:text-fg-faint max-h-32"
+          />
+        </div>
+      )}
+
       {/* Output content */}
       <div className="flex-1 overflow-auto p-4 font-mono text-sm">
+        {/* --- Scratchpad output --- */}
+        {isScratchpad ? (
+          <>
+            {!runOutput && !runError && !isRunning && (
+              <p className="text-fg-faint">
+                Press Run to execute your code with the input above.
+              </p>
+            )}
+            {isRunning && (
+              <p className="text-fg-muted animate-pulse">
+                {statusText ?? "Running..."}
+              </p>
+            )}
+            {runError && (
+              <div className="border border-wa/40 rounded-md p-3">
+                <p className="text-wa text-xs mb-1">Execution service error</p>
+                <pre className="text-fg-dim whitespace-pre-wrap">{runError}</pre>
+              </div>
+            )}
+            {runOutput && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 text-xs text-fg-faint">
+                  <span>
+                    Exit code:{" "}
+                    <span
+                      className={
+                        runOutput.exitCode === 0 ? "text-ac" : "text-wa"
+                      }
+                    >
+                      {runOutput.exitCode}
+                    </span>
+                  </span>
+                  <span>Runtime: {runOutput.runtimeMs}ms</span>
+                  {runOutput.timedOut && (
+                    <span className="text-wa">Timed out (5s limit)</span>
+                  )}
+                  {runOutput.compileFailed && (
+                    <span className="text-wa">Compile error</span>
+                  )}
+                </div>
+                {runOutput.stdout.trim() !== "" && (
+                  <div>
+                    <p className="text-fg-faint text-xs mb-1">stdout</p>
+                    <pre className="text-fg whitespace-pre-wrap">
+                      {runOutput.stdout}
+                    </pre>
+                  </div>
+                )}
+                {runOutput.stderr.trim() !== "" && (
+                  <div>
+                    <p className="text-fg-faint text-xs mb-1">stderr</p>
+                    <pre className="text-wa whitespace-pre-wrap">
+                      {runOutput.stderr}
+                    </pre>
+                  </div>
+                )}
+                {runOutput.stdout.trim() === "" &&
+                  runOutput.stderr.trim() === "" && (
+                    <p className="text-fg-faint text-xs">
+                      (no output)
+                    </p>
+                  )}
+              </div>
+            )}
+          </>
+        ) : (
+        <>
         {!result && !isRunning && (
           <p className="text-fg-faint">
             {problemId
@@ -213,6 +350,8 @@ export function OutputPanel() {
               </p>
             )}
           </div>
+        )}
+        </>
         )}
       </div>
     </div>

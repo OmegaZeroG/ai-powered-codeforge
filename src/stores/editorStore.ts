@@ -32,7 +32,7 @@ interface EditorState {
 export const DEFAULT_CODE: Record<Language, string> = {
   javascript: `// JavaScript\nconsole.log("Hello, CodeForge!")`,
   python: `# Python\nprint("Hello, CodeForge!")`,
-  cpp: `// C++\n#include <iostream>\nint main() {\n  std::cout << "Hello, CodeForge!" << std::endl;\n  return 0;\n}`,
+  cpp: `// C++\n#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n  cout << "Hello, CodeForge!" << endl;\n  return 0;\n}`,
   java: `// Java\npublic class Main {\n  public static void main(String[] args) {\n    System.out.println("Hello, CodeForge!");\n  }\n}`,
 }
 

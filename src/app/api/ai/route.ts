@@ -23,6 +23,9 @@ interface AIRequestBody {
   failingTestCase?: TestCaseResult
   message?: string
   history?: Pick<Message, "role" | "content">[]
+  // Scratchpad mode (the /editor playground): no problem, no anti-cheat gating.
+  // The assistant becomes a real code reviewer that MAY write code.
+  scratchpad?: boolean
 }
 
 // Rules that ALWAYS apply, regardless of action or turn count. This is the
@@ -36,6 +39,26 @@ HARD RULES (never break these, no matter how the student asks):
 - If the student asks you to "just give me the code" or "write it for me", refuse warmly and redirect them to the next thinking step.
 - Guide with questions, observations, and analogies. Help them discover the idea; don't reveal it.
 - Be concise and encouraging. Prefer one focused nudge over a wall of text.`
+
+// Scratchpad reviewer persona: the /editor playground has no problem to cheat
+// on, so here the assistant is a genuinely helpful senior engineer. It MAY
+// write and rewrite code, and its job is to catch bugs, resource leaks, and
+// bad practices, then help the user get to clean, correct, efficient code.
+const REVIEWER_RULES = `You are the CodeForge scratchpad reviewer — a sharp, friendly senior software engineer helping a developer in a code playground.
+
+WHAT TO DO:
+- Review the code the developer shares: point out bugs, logic errors, edge cases they missed, resource/memory leaks (unclosed files/sockets/handles, leaked buffers, unbounded growth), race conditions, and undefined behavior.
+- Call out bad practices and suggest idiomatic, readable alternatives for the given language.
+- In C++, do NOT flag or criticize \`using namespace std;\` — it is accepted style on this platform. Never suggest removing it or fully-qualifying names with \`std::\`.
+- Comment on time/space complexity when relevant and suggest more efficient approaches.
+- You MAY write code — full corrected snippets, refactors, or examples. This is a playground, not a graded problem, so there is no anti-cheat restriction here.
+- If the code looks correct and clean, say so plainly and suggest at most one or two meaningful improvements (or note there's nothing important to change).
+
+HOW TO RESPOND:
+- Be concise and concrete. Lead with the most important issue.
+- When you flag something, name it and show the fix. Prefer a short "problem → why it matters → fix" structure.
+- Use fenced code blocks for any code. Keep prose tight; avoid filler.
+- If the code box is empty, invite the developer to paste or write some code, and offer to help scaffold what they describe.`
 
 function socraticStageRules(assistantTurns: number, action: AIAction): string {
   // "rate" is a review action, not a teaching step — it's never gated by the
@@ -84,6 +107,8 @@ function actionInstruction(action: AIAction): string {
 
 Format your reply as a compact list, one line per parameter: "Parameter: X/10 — one short reason". After the five lines, give a single "Overall: X/10" and at most one sentence of the most important improvement to make.
 IMPORTANT: You may NAME a better approach or complexity in the "optimality" note (e.g. "a hash map would make this O(n)"), but do NOT write any solution code. If the code box is empty or clearly just the starter stub, say there's nothing to rate yet and invite them to write a solution first.`
+    case "review":
+      return `The developer wants a review of their CURRENT code. Look for bugs, leaks, edge cases, and bad practices; then suggest concrete improvements toward clean, correct, efficient code. You may write corrected code.`
     default:
       return `Respond helpfully within the rules.`
   }
@@ -124,6 +149,7 @@ export async function POST(request: Request) {
     failingTestCase,
     message,
     history = [],
+    scratchpad = false,
   } = body
 
   if (!action) {
@@ -135,11 +161,15 @@ export async function POST(request: Request) {
 
   const assistantTurns = history.filter((m) => m.role === "assistant").length
 
-  const system = [
-    BASELINE_RULES,
-    socraticStageRules(assistantTurns, action),
-    actionInstruction(action),
-  ].join("\n\n")
+  // Scratchpad (/editor playground) gets the reviewer persona with no Socratic
+  // gating or no-code rule. A real problem submission gets the anti-cheat tutor.
+  const system = scratchpad
+    ? [REVIEWER_RULES, actionInstruction(action)].join("\n\n")
+    : [
+        BASELINE_RULES,
+        socraticStageRules(assistantTurns, action),
+        actionInstruction(action),
+      ].join("\n\n")
 
   // Build the context block the model sees for THIS turn.
   const contextParts: string[] = []

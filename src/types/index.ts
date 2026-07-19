@@ -4,7 +4,14 @@ export type Language =
   | "cpp"
   | "java"
 
-export type AIAction = "explain" | "fix" | "complete" | "chat" | "hint" | "rate"
+export type AIAction =
+  | "explain"
+  | "fix"
+  | "complete"
+  | "chat"
+  | "hint"
+  | "rate"
+  | "review"
 
 export type Difficulty = "EASY" | "MEDIUM" | "HARD"
 
@@ -90,6 +97,18 @@ export interface SubmitResponse {
 export interface EnqueueResponse {
   submissionId: string
   status: SubmissionStatus
+}
+
+// Response from POST /api/run: a one-off scratchpad execution (no problem, no
+// test cases). Just the raw program output, run synchronously through Piston.
+export interface RunResponse {
+  stdout: string
+  stderr: string
+  exitCode: number
+  signal: string | null
+  timedOut: boolean
+  compileFailed: boolean
+  runtimeMs: number
 }
 
 export interface AIRequest {

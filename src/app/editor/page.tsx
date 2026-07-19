@@ -3,6 +3,7 @@
 import { Editor } from "@/components/Editor"
 import { Toolbar } from "@/components/Toolbar"
 import { OutputPanel } from "@/components/OutputPanel"
+import { AIPanelMount } from "@/components/AIPanelMount"
 
 export default function EditorPage() {
   return (
@@ -11,19 +12,22 @@ export default function EditorPage() {
       <Toolbar />
 
       {/* Main area */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden min-h-0">
         {/* Editor */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Code editor takes 65% height */}
-          <div className="flex-1 overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+          {/* Code editor takes the top; output panel is fixed-height below */}
+          <div className="flex-1 overflow-hidden min-h-0">
             <Editor />
           </div>
 
-          {/* Output panel takes 35% height */}
-          <div className="h-56">
+          <div className="h-56 shrink-0">
             <OutputPanel />
           </div>
         </div>
+
+        {/* AI assistant panel (mounts when toggled open). In the scratchpad it
+            acts as a code reviewer, not the Socratic problem tutor. */}
+        <AIPanelMount />
       </div>
     </div>
   )

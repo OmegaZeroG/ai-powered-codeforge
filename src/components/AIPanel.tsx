@@ -6,10 +6,18 @@ import { useAIStore } from "@/stores/aiStore"
 import { AIAction } from "@/types"
 import { Sparkles, X, Send, Trash2 } from "lucide-react"
 
-const ACTION_BUTTONS: { action: AIAction; label: string }[] = [
+const TUTOR_BUTTONS: { action: AIAction; label: string }[] = [
   { action: "hint", label: "Hint" },
   { action: "explain", label: "Explain" },
   { action: "fix", label: "Fix" },
+  { action: "rate", label: "Rate" },
+]
+
+// In the scratchpad the assistant is a reviewer, so the chips ask for real help.
+const REVIEW_BUTTONS: { action: AIAction; label: string }[] = [
+  { action: "review", label: "Review" },
+  { action: "explain", label: "Explain" },
+  { action: "fix", label: "Find bugs" },
   { action: "rate", label: "Rate" },
 ]
 
@@ -20,10 +28,12 @@ export function AIPanel() {
   const {
     code,
     language,
+    problemId,
     problemStatement,
     problemConstraints,
     result,
   } = useEditorStore()
+  const isScratchpad = !problemId
 
   const [input, setInput] = useState("")
   const [streamingText, setStreamingText] = useState("")
@@ -39,13 +49,17 @@ export function AIPanel() {
     // A visible user bubble describing what they asked for.
     const label =
       userMessage ??
-      (action === "hint"
-        ? "Give me a hint."
-        : action === "explain"
-          ? "Explain this."
-          : action === "rate"
-            ? "Rate my code."
-            : "Help me find the bug.")
+      (action === "review"
+        ? "Review my code."
+        : action === "hint"
+          ? "Give me a hint."
+          : action === "explain"
+            ? "Explain this."
+            : action === "rate"
+              ? "Rate my code."
+              : action === "fix" && isScratchpad
+                ? "Find the bugs in my code."
+                : "Help me find the bug.")
 
     const history = messages.map((m) => ({ role: m.role, content: m.content }))
 
@@ -76,6 +90,7 @@ export function AIPanel() {
           failingTestCase,
           message: userMessage,
           history,
+          scratchpad: isScratchpad,
         }),
       })
 
@@ -130,7 +145,7 @@ export function AIPanel() {
           <span className="leading-tight">
             <span className="block text-white text-sm font-bold">ForgeAI</span>
             <span className="block text-fg-faint text-[10px] tracking-wide">
-              socratic · context-aware
+              {isScratchpad ? "code reviewer · playground" : "socratic · context-aware"}
             </span>
           </span>
         </div>
@@ -159,11 +174,24 @@ export function AIPanel() {
       <div ref={scrollRef} className="flex-1 overflow-auto px-4 py-4 min-h-0">
         {messages.length === 0 && !streamingText && (
           <div className="text-fg-faint text-sm leading-relaxed">
-            <p className="mb-3">
-              I&apos;m your Socratic tutor. I won&apos;t write the solution for
-              you — I&apos;ll help you get there yourself.
-            </p>
-            <p>Pick an action below or ask a question.</p>
+            {isScratchpad ? (
+              <>
+                <p className="mb-3">
+                  I&apos;m your code reviewer. Paste or write code and I&apos;ll
+                  catch bugs, leaks, and bad practices — and help you make it
+                  clean and efficient.
+                </p>
+                <p>Pick an action below or ask a question.</p>
+              </>
+            ) : (
+              <>
+                <p className="mb-3">
+                  I&apos;m your Socratic tutor. I won&apos;t write the solution
+                  for you — I&apos;ll help you get there yourself.
+                </p>
+                <p>Pick an action below or ask a question.</p>
+              </>
+            )}
           </div>
         )}
 
@@ -206,7 +234,7 @@ export function AIPanel() {
 
       {/* Quick action chips */}
       <div className="shrink-0 px-4 pt-3 border-t border-edge flex gap-2">
-        {ACTION_BUTTONS.map(({ action, label }) => (
+        {(isScratchpad ? REVIEW_BUTTONS : TUTOR_BUTTONS).map(({ action, label }) => (
           <button
             key={action}
             onClick={() => send(action)}

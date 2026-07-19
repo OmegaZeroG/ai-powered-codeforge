@@ -1,0 +1,56 @@
+name: CI
+
+# Lint, type-check and build on every push and PR to main. These are the
+# checks that are hard to run reliably on the dev machine (a full `tsc` and
+# `next build` are slow on the local drive), so CI is where they get enforced.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# A newer push to the same branch/PR cancels the previous in-flight run.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    # Dummy values so modules that read env at import time (Prisma client,
+    # next-auth providers) don't crash during the build. No real secrets are
+    # needed: nothing here talks to the live database or any external service.
+    env:
+      DATABASE_URL: postgresql://user:pass@localhost:5432/codeforge?sslmode=disable
+      NEXTAUTH_URL: http://localhost:3000
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      NEXTAUTH_SECRET: ci-dummy-secret-not-used-at-runtime
+      ANTICHEAT_SECRET: ci-dummy-anticheat-secret
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # The Prisma client is generated code (not committed); type-check and
+      # build both import it, so it must exist before they run.
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build

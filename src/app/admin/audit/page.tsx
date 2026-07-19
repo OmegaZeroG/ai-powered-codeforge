@@ -16,6 +16,8 @@ const ACTION_TONE: Record<AuditAction, string> = {
   WARN_USER: "bg-amber-500/10 text-amber-300",
   GRANT_PERMISSIONS: "bg-sky-500/10 text-sky-300",
   REVOKE_PERMISSIONS: "bg-sky-500/10 text-sky-300",
+  CREATE_CONTEST: "bg-violet-500/10 text-violet-300",
+  CANCEL_CONTEST: "bg-red-500/10 text-red-300",
 }
 
 const ALL_ACTIONS: AuditAction[] = [
@@ -26,6 +28,8 @@ const ALL_ACTIONS: AuditAction[] = [
   "WARN_USER",
   "GRANT_PERMISSIONS",
   "REVOKE_PERMISSIONS",
+  "CREATE_CONTEST",
+  "CANCEL_CONTEST",
 ]
 
 export default async function AuditLogPage({

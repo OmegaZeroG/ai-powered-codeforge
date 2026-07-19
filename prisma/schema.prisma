@@ -20,6 +20,7 @@ enum Permission {
   REVOKE_SUBMISSION // revoke / restore submissions
   WARN_USER         // issue warnings
   MANAGE_ADMINS     // grant/revoke permissions on other users
+  MANAGE_CONTESTS   // create / cancel contests
 }
 
 model User {
@@ -27,7 +28,7 @@ model User {
   name          String?
   email         String    @unique
   password      String?
-  emailVerified DateTime?
+  emailVerified DateTime? @db.Timestamptz(3)
   image         String?
   // Public profile fields, editable from the profile page (all optional).
   bio           String?   @db.Text
@@ -39,15 +40,15 @@ model User {
   permissions   Permission[] @default([])
   // --- Moderation state (soft + reversible; nothing is hard-deleted) ---
   banned        Boolean   @default(false)
-  bannedAt      DateTime?
+  bannedAt      DateTime? @db.Timestamptz(3)
   // When the ban lifts. NULL while banned means a permanent ban; a past value
   // means the ban has expired (enforcement treats it as inactive). Cleared on
   // unban. See src/lib/ban.ts for the single source of truth on "is this ban
   // currently active".
-  bannedUntil   DateTime?
+  bannedUntil   DateTime? @db.Timestamptz(3)
   bannedReason  String?   @db.Text
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime  @updatedAt @db.Timestamptz(3)
   accounts      Account[]
   sessions      Session[]
   submissions   Submission[]
@@ -58,6 +59,7 @@ model User {
   warnings        Warning[]  @relation("WarningTarget")
   warningsIssued  Warning[]  @relation("WarningIssuer")
   auditLogs       AuditLog[] @relation("AuditActor")
+  contestsCreated Contest[]  @relation("ContestCreator")
   passwordResetTokens PasswordResetToken[]
 
   @@map("users")
@@ -74,7 +76,7 @@ model TaskClaim {
   taskKey   String
   periodKey String
   xp        Int
-  claimedAt DateTime @default(now())
+  claimedAt DateTime @default(now()) @db.Timestamptz(3)
 
   @@unique([userId, taskKey, periodKey])
   @@index([userId])
@@ -88,7 +90,7 @@ model UserBadge {
   userId   String
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   badgeKey String
-  earnedAt DateTime @default(now())
+  earnedAt DateTime @default(now()) @db.Timestamptz(3)
 
   @@unique([userId, badgeKey])
   @@index([userId])
@@ -104,8 +106,8 @@ model Warning {
   issuedByUserId String
   issuedBy       User      @relation("WarningIssuer", fields: [issuedByUserId], references: [id], onDelete: Cascade)
   reason         String    @db.Text
-  acknowledgedAt DateTime?
-  createdAt      DateTime  @default(now())
+  acknowledgedAt DateTime? @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @db.Timestamptz(3)
 
   @@index([userId])
   @@map("warnings")
@@ -121,6 +123,8 @@ enum AuditAction {
   WARN_USER
   GRANT_PERMISSIONS
   REVOKE_PERMISSIONS
+  CREATE_CONTEST
+  CANCEL_CONTEST
 }
 
 model AuditLog {
@@ -133,7 +137,7 @@ model AuditLog {
   reason      String?     @db.Text
   metadata    Json?
   ipAddress   String?
-  createdAt   DateTime    @default(now())
+  createdAt   DateTime    @default(now()) @db.Timestamptz(3)
 
   @@index([actorUserId])
   @@index([targetType, targetId])
@@ -150,9 +154,9 @@ model PasswordResetToken {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   tokenHash String   @unique
-  expiresAt DateTime
-  usedAt    DateTime?
-  createdAt DateTime @default(now())
+  expiresAt DateTime @db.Timestamptz(3)
+  usedAt    DateTime? @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
 
   @@index([userId])
   @@map("password_reset_tokens")
@@ -181,7 +185,7 @@ model Session {
   id           String   @id @default(cuid())
   sessionToken String   @unique
   userId       String
-  expires      DateTime
+  expires      DateTime @db.Timestamptz(3)
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("sessions")
@@ -194,7 +198,7 @@ model Topic {
   description String?   @db.Text
   order       Int       @default(0)
   problems    Problem[]
-  createdAt   DateTime  @default(now())
+  createdAt   DateTime  @default(now()) @db.Timestamptz(3)
 
   @@map("topics")
 }
@@ -222,8 +226,9 @@ model Problem {
   testCases     TestCase[]
   submissions   Submission[]
   progress      UserProgress[]
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  contestProblems ContestProblem[]
+  createdAt     DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime       @updatedAt @db.Timestamptz(3)
 
   @@map("problems")
 }
@@ -268,9 +273,9 @@ model Submission {
   // (profile, leaderboards, problem history) but never deleted, and can be
   // restored. Set only from the admin panel via an audited action.
   revoked       Boolean   @default(false)
-  revokedAt     DateTime?
+  revokedAt     DateTime? @db.Timestamptz(3)
   revokedReason String?   @db.Text
-  createdAt   DateTime @default(now())
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
 
   @@index([suspectedAiPasted])
   @@map("submissions")
@@ -291,9 +296,46 @@ model UserProgress {
   status        ProgressStatus @default(NOT_STARTED)
   attempts      Int            @default(0)
   bestVerdict   Verdict?
-  lastAttemptAt DateTime?
-  solvedAt      DateTime?
+  lastAttemptAt DateTime? @db.Timestamptz(3)
+  solvedAt      DateTime? @db.Timestamptz(3)
 
   @@unique([userId, problemId])
   @@map("user_progress")
+}
+
+// A weekly rated round. An admin chooses only the difficulty; the system
+// auto-selects 3 problems of that difficulty from the problem set and schedules
+// the round for the next free Sunday 22:00 local slot, running for one hour.
+// Phase 1 stores the definition + schedule; solving/leaderboard/XP land in a
+// later phase (see the contests feature notes).
+model Contest {
+  id          String           @id @default(cuid())
+  title       String
+  slug        String           @unique
+  // All three problems share this difficulty (all-easy / all-medium / all-hard).
+  difficulty  Difficulty
+  startsAt    DateTime @db.Timestamptz(3)
+  endsAt      DateTime @db.Timestamptz(3)
+  // Who created it (staff). Kept for the audit trail / attribution.
+  createdByUserId String?
+  createdBy   User?            @relation("ContestCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  problems    ContestProblem[]
+  createdAt   DateTime         @default(now()) @db.Timestamptz(3)
+
+  @@index([startsAt])
+  @@map("contests")
+}
+
+// Join row pinning a specific problem into a contest at a fixed position (1..3).
+model ContestProblem {
+  id        String  @id @default(cuid())
+  contestId String
+  contest   Contest @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  problemId String
+  problem   Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  order     Int     @default(0)
+
+  @@unique([contestId, problemId])
+  @@index([contestId])
+  @@map("contest_problems")
 }

@@ -20,6 +20,7 @@ const LINKS: NavLink[] = [
   { label: "Users", href: "/admin/users", needs: "VIEW_USERS" },
   { label: "Submissions", href: "/admin/submissions", needs: "VIEW_SUBMISSIONS" },
   { label: "Anti-cheat", href: "/admin/anti-cheat", needs: "VIEW_ANTICHEAT" },
+  { label: "Contests", href: "/admin/contests", needs: "MANAGE_CONTESTS" },
   { label: "Audit log", href: "/admin/audit", needs: "VIEW_AUDIT" },
 ]
 

@@ -60,26 +60,32 @@ export default async function AdminUserDetailPage({
         take: 20,
         include: { issuedBy: { select: { name: true, email: true } } },
       },
-      submissions: canSeeSubmissions
-        ? {
-            orderBy: { createdAt: "desc" },
-            take: 25,
-            select: {
-              id: true,
-              verdict: true,
-              language: true,
-              revoked: true,
-              revokedReason: true,
-              suspectedAiPasted: true,
-              createdAt: true,
-              problem: { select: { title: true, slug: true } },
-            },
-          }
-        : false,
     },
   })
 
   if (!user) notFound()
+
+  // Fetched separately, not as a conditional select on the user query: a
+  // runtime-boolean conditional select defeats Prisma's payload type inference
+  // (the relation `problem` then isn't known to the type), so we run a plain
+  // typed findMany only when the viewer is allowed to see submissions.
+  const submissions = canSeeSubmissions
+    ? await prisma.submission.findMany({
+        where: { userId: user.id },
+        orderBy: { createdAt: "desc" },
+        take: 25,
+        select: {
+          id: true,
+          verdict: true,
+          language: true,
+          revoked: true,
+          revokedReason: true,
+          suspectedAiPasted: true,
+          createdAt: true,
+          problem: { select: { title: true, slug: true } },
+        },
+      })
+    : null
 
   const isStaffTarget = user.permissions.length > 0
   const isSelf = user.id === session?.user?.id
@@ -226,11 +232,11 @@ export default async function AdminUserDetailPage({
             <p className="text-sm text-muted-foreground">
               You lack permission to view submissions.
             </p>
-          ) : !user.submissions || user.submissions.length === 0 ? (
+          ) : !submissions || submissions.length === 0 ? (
             <p className="text-sm text-muted-foreground">No submissions.</p>
           ) : (
             <ul className="space-y-2">
-              {user.submissions.map((s) => (
+              {submissions.map((s) => (
                 <li
                   key={s.id}
                   className="rounded-xl border border-border/60 bg-background/40 p-3"

@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { runCode } from "@/lib/piston"
 import { syncBadges } from "@/lib/gamification"
-import { Verdict } from "@prisma/client"
+import { Prisma, Verdict } from "@prisma/client"
 import type { TestCaseResult } from "@/types"
 
 // A submission is re-queued on a transient judge failure (Piston unreachable,
@@ -151,7 +151,9 @@ export async function judgeSubmission(submissionId: string): Promise<JudgeOutcom
     data: {
       status: "DONE",
       verdict,
-      testResults,
+      // TestCaseResult[] is valid JSON; cast to Prisma's JSON input type since
+      // the column is Json?.
+      testResults: testResults as unknown as Prisma.InputJsonValue,
       runtimeMs,
       judgedAt: new Date(),
       queueError: null,

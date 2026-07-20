@@ -4,6 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useSession, signOut } from "next-auth/react"
 import { Terminal, LogOut, ShieldCheck } from "lucide-react"
+import { NotificationBell } from "@/components/NotificationBell"
 
 /* ---------------------------------------------------------------------------
    ProductNav — the in-app top bar for logged-in pages (Topics, Profile, …).
@@ -84,13 +85,16 @@ export function ProductNav() {
           ) : null}
         </div>
 
-        <button
-          onClick={() => signOut({ callbackUrl: "/" })}
-          className="inline-flex items-center gap-1.5 rounded-full border border-border/70 px-4 py-1.5 text-[13px] text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
-        >
-          <LogOut size={14} />
-          <span className="hidden sm:inline">Log out</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <NotificationBell />
+          <button
+            onClick={() => signOut({ callbackUrl: "/" })}
+            className="inline-flex items-center gap-1.5 rounded-full border border-border/70 px-4 py-1.5 text-[13px] text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+          >
+            <LogOut size={14} />
+            <span className="hidden sm:inline">Log out</span>
+          </button>
+        </div>
       </nav>
     </header>
   )

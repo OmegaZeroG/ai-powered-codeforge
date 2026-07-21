@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/prisma"
+import { createAndSendVerificationToken } from "@/lib/email-verification"
 
 export async function POST(request: Request) {
   try {
@@ -33,6 +34,10 @@ export async function POST(request: Request) {
 
     const hashedPassword = await bcrypt.hash(password, 10)
 
+    // Credentials accounts start UNVERIFIED (emailVerified stays null). The
+    // login gate in auth.ts blocks sign-in until they confirm via the emailed
+    // link. (OAuth accounts are created pre-verified in the auth signIn
+    // callback and never touch this route.)
     const user = await prisma.user.create({
       data: {
         name: name || null,
@@ -41,8 +46,24 @@ export async function POST(request: Request) {
       },
     })
 
+    // Issue + send the confirmation email. Don't fail the signup if mail
+    // sending hiccups — the account exists and they can request a resend.
+    try {
+      await createAndSendVerificationToken(user.id, user.email)
+    } catch (err) {
+      console.error("[signup] failed to send verification email:", err)
+    }
+
     return NextResponse.json(
-      { id: user.id, email: user.email, name: user.name },
+      {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        // Signal to the client that login is gated on email confirmation.
+        verificationRequired: true,
+        message:
+          "Account created. Check your email for a confirmation link to activate your account.",
+      },
       { status: 201 }
     )
   } catch (error) {

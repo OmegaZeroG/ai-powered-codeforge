@@ -17,6 +17,18 @@ export async function GET() {
   const userId = session.user.id
   const now = new Date()
 
+  // Human-friendly IST timestamp, e.g. "20 Jul 2026, 10:00 PM".
+  const fmtIST = (d: Date) =>
+    d.toLocaleString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: "Asia/Kolkata",
+    })
+
   const [user, warnings, revoked, contests] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
@@ -65,7 +77,7 @@ export async function GET() {
   if (user && isBanActive(user)) {
     const until = isPermanentBan(user)
       ? "This is a permanent ban."
-      : `Ban lifts on ${user.bannedUntil?.toISOString()}.`
+      : `Ban lifts on ${fmtIST(user.bannedUntil!)}.`
     items.push({
       id: "ban",
       kind: "ban",
@@ -117,8 +129,8 @@ export async function GET() {
       severity: "info",
       title: live ? `Live now: ${c.title}` : `Upcoming contest: ${c.title}`,
       body: live
-        ? `Ends ${c.endsAt.toISOString()}.`
-        : `Starts ${c.startsAt.toISOString()}.`,
+        ? `Ends ${fmtIST(c.endsAt)}.`
+        : `Starts ${fmtIST(c.startsAt)}.`,
       href: `/contests/${c.slug}`,
       at: c.startsAt.toISOString(),
       unread: false,

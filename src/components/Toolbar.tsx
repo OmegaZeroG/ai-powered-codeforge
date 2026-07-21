@@ -6,6 +6,7 @@ import { useSession, signOut } from "next-auth/react"
 import { useEditorStore } from "@/stores/editorStore"
 import { useAIStore } from "@/stores/aiStore"
 import { Language } from "@/types"
+import { NotificationBell } from "@/components/NotificationBell"
 import {
   writeDraft,
   readSaveMode,
@@ -304,6 +305,7 @@ export function Toolbar() {
         {/* Session info + logout */}
         {status === "authenticated" && session?.user && (
           <div className="flex items-center gap-2 pl-3 ml-1 border-l border-edge">
+            <NotificationBell />
             <span className="text-fg-muted text-sm max-w-[140px] truncate">
               {session.user.name || session.user.email}
             </span>

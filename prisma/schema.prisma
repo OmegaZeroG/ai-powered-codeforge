@@ -10,58 +10,69 @@ datasource db {
 // set makes them staff. Checked server-side on every admin route/action (the
 // middleware gate is only defense-in-depth). See src/lib/authz.ts.
 enum Permission {
-  VIEW_ADMIN        // can open the admin panel at all
-  VIEW_USERS        // list/inspect users
-  VIEW_PII          // see emails and other identifying fields
-  VIEW_SUBMISSIONS  // inspect any user's submissions
-  VIEW_ANTICHEAT    // access the anti-cheat review queue
-  VIEW_AUDIT        // read the audit log
-  BAN_USER          // ban / unban users
+  VIEW_ADMIN // can open the admin panel at all
+  VIEW_USERS // list/inspect users
+  VIEW_PII // see emails and other identifying fields
+  VIEW_SUBMISSIONS // inspect any user's submissions
+  VIEW_ANTICHEAT // access the anti-cheat review queue
+  VIEW_AUDIT // read the audit log
+  BAN_USER // ban / unban users
   REVOKE_SUBMISSION // revoke / restore submissions
-  WARN_USER         // issue warnings
-  MANAGE_ADMINS     // grant/revoke permissions on other users
-  MANAGE_CONTESTS   // create / cancel contests
+  WARN_USER // issue warnings
+  MANAGE_ADMINS // grant/revoke permissions on other users
+  MANAGE_CONTESTS // create / cancel contests
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  password      String?
-  emailVerified DateTime? @db.Timestamptz(3)
-  image         String?
+  id                   String                @id @default(cuid())
+  name                 String?
+  email                String                @unique
+  password             String?
+  emailVerified        DateTime?             @db.Timestamptz(3)
+  image                String?
   // Public profile fields, editable from the profile page (all optional).
-  bio           String?   @db.Text
-  location      String?
-  githubHandle  String?
-  website       String?
+  bio                  String?               @db.Text
+  location             String?
+  githubHandle         String?
+  website              String?
   // --- Admin / RBAC ---
   // Granular capabilities. Empty for normal users; any entry marks staff.
-  permissions   Permission[] @default([])
+  permissions          Permission[]          @default([])
   // --- Moderation state (soft + reversible; nothing is hard-deleted) ---
-  banned        Boolean   @default(false)
-  bannedAt      DateTime? @db.Timestamptz(3)
+  banned               Boolean               @default(false)
+  bannedAt             DateTime?             @db.Timestamptz(3)
   // When the ban lifts. NULL while banned means a permanent ban; a past value
   // means the ban has expired (enforcement treats it as inactive). Cleared on
   // unban. See src/lib/ban.ts for the single source of truth on "is this ban
   // currently active".
-  bannedUntil   DateTime? @db.Timestamptz(3)
-  bannedReason  String?   @db.Text
-  createdAt     DateTime  @default(now()) @db.Timestamptz(3)
-  updatedAt     DateTime  @updatedAt @db.Timestamptz(3)
-  accounts      Account[]
-  sessions      Session[]
-  submissions   Submission[]
-  progress      UserProgress[]
-  taskClaims    TaskClaim[]
-  badges        UserBadge[]
+  bannedUntil          DateTime?             @db.Timestamptz(3)
+  bannedReason         String?               @db.Text
+  // --- Two-factor authentication (credentials logins only; OAuth uses the
+  // provider's own MFA). twoFactorMethod is NULL when 2FA is off. For "totp"
+  // the shared secret lives in twoFactorSecret (base32) and recovery lives in
+  // TwoFactorBackupCode; for "email" a one-time code is issued per login into
+  // LoginOtp. See src/lib/two-factor.ts. ---
+  twoFactorEnabled     Boolean               @default(false)
+  twoFactorMethod      String? // "totp" | "email" | null
+  twoFactorSecret      String? // base32 TOTP secret; NULL for email 2FA
+  createdAt            DateTime              @default(now()) @db.Timestamptz(3)
+  updatedAt            DateTime              @updatedAt @db.Timestamptz(3)
+  accounts             Account[]
+  sessions             Session[]
+  submissions          Submission[]
+  progress             UserProgress[]
+  taskClaims           TaskClaim[]
+  badges               UserBadge[]
   // Warnings received, and warnings/audit entries this user authored as staff.
-  warnings        Warning[]  @relation("WarningTarget")
-  warningsIssued  Warning[]  @relation("WarningIssuer")
-  auditLogs       AuditLog[] @relation("AuditActor")
-  contestsCreated Contest[]  @relation("ContestCreator")
-  contestEntries  ContestParticipant[]
-  passwordResetTokens PasswordResetToken[]
+  warnings             Warning[]             @relation("WarningTarget")
+  warningsIssued       Warning[]             @relation("WarningIssuer")
+  auditLogs            AuditLog[]            @relation("AuditActor")
+  contestsCreated      Contest[]             @relation("ContestCreator")
+  contestEntries       ContestParticipant[]
+  passwordResetTokens  PasswordResetToken[]
+  verificationTokens   VerificationToken[]
+  twoFactorBackupCodes TwoFactorBackupCode[]
+  loginOtps            LoginOtp[]
 
   @@map("users")
 }
@@ -133,7 +144,7 @@ model AuditLog {
   actorUserId String
   actor       User        @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: Cascade)
   action      AuditAction
-  targetType  String      // "user" | "submission"
+  targetType  String // "user" | "submission"
   targetId    String
   reason      String?     @db.Text
   metadata    Json?
@@ -151,16 +162,67 @@ model AuditLog {
 // passwords. The raw token lives only in the emailed link. Expires quickly and
 // is deleted (or marked used) on redemption.
 model PasswordResetToken {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tokenHash String   @unique
-  expiresAt DateTime @db.Timestamptz(3)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime  @db.Timestamptz(3)
   usedAt    DateTime? @db.Timestamptz(3)
-  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
 
   @@index([userId])
   @@map("password_reset_tokens")
+}
+
+// A single-use email-verification token, issued on credentials signup. Mirrors
+// PasswordResetToken exactly: we store only the SHA-256 hash; the raw token
+// lives only in the emailed /verify link. Redeeming it stamps
+// User.emailVerified. OAuth accounts never use this (they are verified by the
+// provider in the auth signIn callback). See src/lib/email-verification.ts.
+model VerificationToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime  @db.Timestamptz(3)
+  usedAt    DateTime? @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+
+  @@index([userId])
+  @@map("verification_tokens")
+}
+
+// A one-time login OTP for EMAIL-based 2FA. Issued after a correct password
+// when the user has email 2FA on, then verified to complete login. We store the
+// SHA-256 hash of the 6-digit code, a short expiry, and an attempt counter to
+// throttle guessing. Consumed (usedAt) on success. See src/lib/two-factor.ts.
+model LoginOtp {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  codeHash  String
+  attempts  Int       @default(0)
+  expiresAt DateTime  @db.Timestamptz(3)
+  usedAt    DateTime? @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+
+  @@index([userId])
+  @@map("login_otps")
+}
+
+// One-time recovery codes for TOTP 2FA, shown once at setup so a user who loses
+// their authenticator can still get in. We store only the SHA-256 hash of each
+// code; each is consumed (usedAt) on use. See src/lib/two-factor.ts.
+model TwoFactorBackupCode {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  codeHash  String    @unique
+  usedAt    DateTime? @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+
+  @@index([userId])
+  @@map("two_factor_backup_codes")
 }
 
 model Account {
@@ -211,25 +273,25 @@ enum Difficulty {
 }
 
 model Problem {
-  id            String         @id @default(cuid())
-  title         String
-  slug          String         @unique
-  statement     String         @db.Text
-  constraints   String?        @db.Text
-  difficulty    Difficulty     @default(EASY)
-  order         Int            @default(0)
-  starterCode   Json?
+  id              String           @id @default(cuid())
+  title           String
+  slug            String           @unique
+  statement       String           @db.Text
+  constraints     String?          @db.Text
+  difficulty      Difficulty       @default(EASY)
+  order           Int              @default(0)
+  starterCode     Json?
   // When true, the statement panel blocks/poisons copy attempts (see
   // src/lib/anticheat.ts). Defaults on; curators can turn it off per-problem.
-  copyProtected Boolean        @default(true)
-  topicId       String
-  topic         Topic          @relation(fields: [topicId], references: [id], onDelete: Cascade)
-  testCases     TestCase[]
-  submissions   Submission[]
-  progress      UserProgress[]
+  copyProtected   Boolean          @default(true)
+  topicId         String
+  topic           Topic            @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  testCases       TestCase[]
+  submissions     Submission[]
+  progress        UserProgress[]
   contestProblems ContestProblem[]
-  createdAt     DateTime       @default(now()) @db.Timestamptz(3)
-  updatedAt     DateTime       @updatedAt @db.Timestamptz(3)
+  createdAt       DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime         @updatedAt @db.Timestamptz(3)
 
   @@map("problems")
 }
@@ -269,43 +331,43 @@ enum SubmissionStatus {
 }
 
 model Submission {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  problemId   String
-  problem     Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
-  code        String   @db.Text
-  language    String
-  verdict     Verdict  @default(PENDING)
+  id                String           @id @default(cuid())
+  userId            String
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problemId         String
+  problem           Problem          @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  code              String           @db.Text
+  language          String
+  verdict           Verdict          @default(PENDING)
   // --- Async judging pipeline (see enum SubmissionStatus, src/lib/queue.ts).
   // A submission is enqueued QUEUED; a worker claims it (FOR UPDATE SKIP
   // LOCKED), runs it, and writes the verdict + status=DONE. attempts counts
   // judge retries; a transient Piston failure re-queues until MAX_ATTEMPTS,
   // then status=ERROR with queueError set (never a false WRONG_ANSWER).
-  status      SubmissionStatus @default(QUEUED)
-  attempts    Int      @default(0)
-  workerId    String?
-  startedAt   DateTime? @db.Timestamptz(3)
-  judgedAt    DateTime? @db.Timestamptz(3)
-  queueError  String?   @db.Text
-  testResults Json?
-  runtimeMs   Int?
+  status            SubmissionStatus @default(QUEUED)
+  attempts          Int              @default(0)
+  workerId          String?
+  startedAt         DateTime?        @db.Timestamptz(3)
+  judgedAt          DateTime?        @db.Timestamptz(3)
+  queueError        String?          @db.Text
+  testResults       Json?
+  runtimeMs         Int?
   // Heuristic anti-cheat signal: true if the submitted code contains this
   // problem's canary token (see src/lib/anticheat.ts). Not enforced/blocked,
   // just recorded for later review -- a detect-and-discourage signal, not proof.
-  suspectedAiPasted Boolean  @default(false)
+  suspectedAiPasted Boolean          @default(false)
   // --- Moderation (soft): revoked submissions are hidden from public views
   // (profile, leaderboards, problem history) but never deleted, and can be
   // restored. Set only from the admin panel via an audited action.
-  revoked       Boolean   @default(false)
-  revokedAt     DateTime? @db.Timestamptz(3)
-  revokedReason String?   @db.Text
+  revoked           Boolean          @default(false)
+  revokedAt         DateTime?        @db.Timestamptz(3)
+  revokedReason     String?          @db.Text
   // Set when the submission was made from a live contest page. Basis for the
   // contest leaderboard (solves, then time + wrong-submission penalties).
   // SetNull so deleting/cancelling a contest keeps the practice history.
-  contestId   String?
-  contest     Contest? @relation("ContestSubmissions", fields: [contestId], references: [id], onDelete: SetNull)
-  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  contestId         String?
+  contest           Contest?         @relation("ContestSubmissions", fields: [contestId], references: [id], onDelete: SetNull)
+  createdAt         DateTime         @default(now()) @db.Timestamptz(3)
 
   @@index([suspectedAiPasted])
   @@index([contestId, userId])
@@ -329,8 +391,8 @@ model UserProgress {
   status        ProgressStatus @default(NOT_STARTED)
   attempts      Int            @default(0)
   bestVerdict   Verdict?
-  lastAttemptAt DateTime? @db.Timestamptz(3)
-  solvedAt      DateTime? @db.Timestamptz(3)
+  lastAttemptAt DateTime?      @db.Timestamptz(3)
+  solvedAt      DateTime?      @db.Timestamptz(3)
 
   @@unique([userId, problemId])
   @@map("user_progress")
@@ -342,20 +404,20 @@ model UserProgress {
 // Phase 1 stores the definition + schedule; solving/leaderboard/XP land in a
 // later phase (see the contests feature notes).
 model Contest {
-  id          String           @id @default(cuid())
-  title       String
-  slug        String           @unique
+  id              String               @id @default(cuid())
+  title           String
+  slug            String               @unique
   // All three problems share this difficulty (all-easy / all-medium / all-hard).
-  difficulty  Difficulty
-  startsAt    DateTime @db.Timestamptz(3)
-  endsAt      DateTime @db.Timestamptz(3)
+  difficulty      Difficulty
+  startsAt        DateTime             @db.Timestamptz(3)
+  endsAt          DateTime             @db.Timestamptz(3)
   // Who created it (staff). Kept for the audit trail / attribution.
   createdByUserId String?
-  createdBy   User?            @relation("ContestCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  problems     ContestProblem[]
-  submissions  Submission[]         @relation("ContestSubmissions")
-  participants ContestParticipant[]
-  createdAt    DateTime             @default(now()) @db.Timestamptz(3)
+  createdBy       User?                @relation("ContestCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  problems        ContestProblem[]
+  submissions     Submission[]         @relation("ContestSubmissions")
+  participants    ContestParticipant[]
+  createdAt       DateTime             @default(now()) @db.Timestamptz(3)
 
   @@index([startsAt])
   @@map("contests")
@@ -380,14 +442,14 @@ model ContestProblem {
 // of running to the full contest end. A row is created on first entry; a NULL
 // finishedAt means they never clicked "End Contest" (their clock = contest end).
 model ContestParticipant {
-  id          String   @id @default(cuid())
-  contestId   String
-  contest     Contest  @relation(fields: [contestId], references: [id], onDelete: Cascade)
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id         String    @id @default(cuid())
+  contestId  String
+  contest    Contest   @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   // When the user clicked "End Contest". NULL = still running / never ended.
-  finishedAt  DateTime? @db.Timestamptz(3)
-  createdAt   DateTime  @default(now()) @db.Timestamptz(3)
+  finishedAt DateTime? @db.Timestamptz(3)
+  createdAt  DateTime  @default(now()) @db.Timestamptz(3)
 
   @@unique([contestId, userId])
   @@index([contestId])

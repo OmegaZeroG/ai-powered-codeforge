@@ -58,6 +58,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return null
         }
 
+        // Email-verification gate: credentials accounts must confirm their
+        // email before they can sign in. OAuth accounts are created with
+        // emailVerified set (see the signIn callback) so they never hit this.
+        // Returning null blocks the login; the UI calls /api/auth/login-status
+        // to learn the reason and offer a "resend verification" action.
+        if (!user.emailVerified) {
+          return null
+        }
+
         // Banned users MAY sign in now — the ban is enforced as a profile-only
         // lockdown (see proxy.ts + src/lib/ban.ts), not a login block, so the
         // user can read their suspension notice and countdown.

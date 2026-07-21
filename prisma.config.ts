@@ -10,6 +10,14 @@ export default defineConfig({
     seed: "tsx prisma/seed.ts",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    // Migrations must run over a DIRECT (unpooled) connection. Neon's pooled
+    // "-pooler" endpoint (PgBouncer, transaction mode) scatters consecutive
+    // DDL statements across different backend sessions, so a CREATE TABLE in
+    // one migration isn't visible to an ALTER TABLE in the next during the
+    // shadow-DB replay ("relation ... does not exist"). DIRECT_URL is the same
+    // database with "-pooler" removed from the host. The app's runtime client
+    // still uses the pooled DATABASE_URL (built via the Neon adapter in code);
+    // only the Prisma CLI reads this. Falls back to DATABASE_URL if unset.
+    url: process.env["DIRECT_URL"] ?? process.env["DATABASE_URL"],
   },
 });

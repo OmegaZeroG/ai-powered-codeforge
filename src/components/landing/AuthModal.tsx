@@ -37,6 +37,10 @@ export function AuthModal({
   // "Forgot password?" is a sub-view of the login tab.
   const [forgotView, setForgotView] = useState(false)
   const [forgotSent, setForgotSent] = useState(false)
+  // Set when a login is blocked because the email isn't verified yet — drives a
+  // "resend verification" affordance under the error message.
+  const [needsVerify, setNeedsVerify] = useState(false)
+  const [resendState, setResendState] = useState<"idle" | "sending" | "sent">("idle")
 
   // Reset transient state whenever the modal opens or the tab switches.
   useEffect(() => {
@@ -44,6 +48,8 @@ export function AuthModal({
     setPassword("")
     setForgotView(false)
     setForgotSent(false)
+    setNeedsVerify(false)
+    setResendState("idle")
   }, [mode, open])
 
   // Close on Escape and lock body scroll while open.
@@ -84,6 +90,13 @@ export function AuthModal({
           setIsLoading(false)
           return
         }
+        // Accounts start unverified — do NOT attempt sign-in (the gate would
+        // reject it). Show the "check your email" confirmation instead.
+        setNeedsVerify(true)
+        setResendState("sent")
+        setError(null)
+        setIsLoading(false)
+        return
       }
 
       const result = await signIn("credentials", {
@@ -93,11 +106,28 @@ export function AuthModal({
       })
 
       if (result?.error) {
-        setError(
-          mode === "signup"
-            ? "Account created, but sign in failed. Try logging in."
-            : "Invalid email or password."
-        )
+        // next-auth collapses every authorize() failure into one opaque error.
+        // Ask the server WHY so we can offer "resend verification" when the
+        // account exists and the only blocker is an unconfirmed email.
+        let reason = "bad_credentials"
+        try {
+          const r = await fetch("/api/auth/login-status", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password }),
+          })
+          const d = await r.json().catch(() => null)
+          if (d?.reason) reason = d.reason
+        } catch {
+          // fall through to generic message
+        }
+
+        if (reason === "email_unverified") {
+          setNeedsVerify(true)
+          setError("Please confirm your email before logging in.")
+        } else {
+          setError("Invalid email or password.")
+        }
         setIsLoading(false)
         return
       }
@@ -129,6 +159,26 @@ export function AuthModal({
       setError("Something went wrong. Please try again.")
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  async function handleResendVerification() {
+    if (!email) {
+      setError("Enter your email above, then resend.")
+      return
+    }
+    setResendState("sending")
+    try {
+      await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      })
+      // Enumeration-safe endpoint always returns ok; show sent regardless.
+      setResendState("sent")
+    } catch {
+      setResendState("idle")
+      setError("Couldn't resend right now. Try again in a moment.")
     }
   }
 
@@ -399,6 +449,36 @@ export function AuthModal({
               </div>
 
               {error && <p className="text-[13px] text-destructive">{error}</p>}
+
+              {needsVerify && (
+                <div className="rounded-lg border border-primary/40 bg-primary/10 px-3 py-3 text-[13px]">
+                  <p className="font-medium text-foreground">
+                    {mode === "signup"
+                      ? "Confirm your email to finish"
+                      : "Email not confirmed yet"}
+                  </p>
+                  <p className="mt-1 text-muted-foreground">
+                    We sent a confirmation link to{" "}
+                    <span className="text-foreground">{email || "your inbox"}</span>.
+                    Click it to activate your account, then log in.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleResendVerification}
+                    disabled={resendState === "sending"}
+                    className="mt-2 inline-flex items-center gap-1.5 text-[13px] font-medium text-primary hover:underline disabled:opacity-60"
+                  >
+                    {resendState === "sending" && (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    )}
+                    {resendState === "sent"
+                      ? "Verification email sent — check your inbox"
+                      : resendState === "sending"
+                        ? "Sending…"
+                        : "Resend verification email"}
+                  </button>
+                </div>
+              )}
 
               <button
                 type="submit"

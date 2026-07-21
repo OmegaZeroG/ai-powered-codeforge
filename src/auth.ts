@@ -5,6 +5,8 @@ import Google from "next-auth/providers/google"
 import bcrypt from "bcryptjs"
 import type { Permission } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
+import { verifyLoginOtp } from "@/lib/two-factor"
+import { verifyTotp, verifyAndConsumeBackupCode } from "@/lib/totp"
 
 // How long a token's cached permissions/ban state is trusted before we re-read
 // it from the database. Keeps a freshly banned user (or a just-revoked admin)
@@ -35,10 +37,18 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        // Optional second factor. Empty on the first sign-in attempt; the UI
+        // re-submits with the emailed/app code when 2FA is required (see below).
+        otp: { label: "Code", type: "text" },
+        // Which enrolled method the code answers ("email" | "totp"). Set when
+        // the user picks "Try another way"; defaults to the account's primary.
+        otpMethod: { label: "Method", type: "text" },
       },
       authorize: async (credentials) => {
         const email = credentials?.email as string | undefined
         const password = credentials?.password as string | undefined
+        const otp = (credentials?.otp as string | undefined)?.trim() || ""
+        const otpMethod = credentials?.otpMethod as string | undefined
 
         if (!email || !password) {
           return null
@@ -65,6 +75,62 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         // to learn the reason and offer a "resend verification" action.
         if (!user.emailVerified) {
           return null
+        }
+
+        // Two-factor gate. A correct password is not enough once 2FA is on; the
+        // user must also pass their second factor. On the first attempt `otp` is
+        // empty — we return null (login blocked). The UI then calls
+        // /api/auth/login-status, learns which method to challenge and the full
+        // enrolled set (for "Try another way"), flips to code entry, and
+        // re-submits credentials WITH the code and the chosen `otpMethod`.
+        //
+        // Methods are enrolled independently (email and/or totp). We verify
+        // against the method the UI says it's answering; if that's missing or not
+        // enrolled we fall back to the account's primary. OAuth logins never
+        // reach authorize(), so provider MFA is unaffected.
+        if (user.twoFactorEnabled) {
+          if (!otp) {
+            return null
+          }
+
+          // Resolve which method this code should be checked against.
+          const enrolled: ("email" | "totp")[] = []
+          if (user.twoFactorEmailEnabled) enrolled.push("email")
+          if (user.twoFactorTotpEnabled) enrolled.push("totp")
+          if (enrolled.length === 0) {
+            // Flag says on but nothing enrolled — fail closed.
+            return null
+          }
+
+          const requested =
+            otpMethod === "email" || otpMethod === "totp" ? otpMethod : null
+          const challenge =
+            requested && enrolled.includes(requested)
+              ? requested
+              : ((user.twoFactorMethod as "email" | "totp" | null) ??
+                enrolled[0])
+
+          if (challenge === "email") {
+            const otpOk = await verifyLoginOtp(user.id, otp)
+            if (!otpOk) {
+              return null
+            }
+          } else if (challenge === "totp") {
+            // Accept either a live authenticator code OR a one-time backup code
+            // (for a user who lost their device). Backup codes are 8 chars with
+            // an optional dash; try TOTP first, fall back to consuming a backup.
+            const totpOk =
+              !!user.twoFactorSecret &&
+              (await verifyTotp(user.twoFactorSecret, otp))
+            const backupOk = totpOk
+              ? false
+              : await verifyAndConsumeBackupCode(user.id, otp)
+            if (!totpOk && !backupOk) {
+              return null
+            }
+          } else {
+            return null
+          }
         }
 
         // Banned users MAY sign in now — the ban is enforced as a profile-only

@@ -48,13 +48,19 @@ model User {
   bannedUntil          DateTime?             @db.Timestamptz(3)
   bannedReason         String?               @db.Text
   // --- Two-factor authentication (credentials logins only; OAuth uses the
-  // provider's own MFA). twoFactorMethod is NULL when 2FA is off. For "totp"
-  // the shared secret lives in twoFactorSecret (base32) and recovery lives in
-  // TwoFactorBackupCode; for "email" a one-time code is issued per login into
-  // LoginOtp. See src/lib/two-factor.ts. ---
-  twoFactorEnabled     Boolean               @default(false)
-  twoFactorMethod      String? // "totp" | "email" | null
-  twoFactorSecret      String? // base32 TOTP secret; NULL for email 2FA
+  // provider's own MFA). Multiple methods can be enrolled at once:
+  //   twoFactorEmailEnabled — a one-time code emailed per login (LoginOtp)
+  //   twoFactorTotpEnabled  — an authenticator app; secret in twoFactorSecret
+  //                           (base32), recovery in TwoFactorBackupCode
+  // twoFactorEnabled is the master "any method on" flag. twoFactorMethod names
+  // the PRIMARY method challenged first at login ("totp" | "email"); the user
+  // can pick another enrolled method via "Try another way". NULL when 2FA off.
+  // See src/lib/two-factor.ts and src/lib/totp.ts. ---
+  twoFactorEnabled      Boolean               @default(false)
+  twoFactorMethod       String? // primary: "totp" | "email" | null
+  twoFactorEmailEnabled Boolean               @default(false)
+  twoFactorTotpEnabled  Boolean               @default(false)
+  twoFactorSecret       String? // base32 TOTP secret; NULL when TOTP not enrolled
   createdAt            DateTime              @default(now()) @db.Timestamptz(3)
   updatedAt            DateTime              @updatedAt @db.Timestamptz(3)
   accounts             Account[]

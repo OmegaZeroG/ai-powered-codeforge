@@ -41,6 +41,20 @@ export function AuthModal({
   // "resend verification" affordance under the error message.
   const [needsVerify, setNeedsVerify] = useState(false)
   const [resendState, setResendState] = useState<"idle" | "sending" | "sent">("idle")
+  // Two-factor login: once the server says a code is required we flip to a
+  // code-entry step. `otp` holds what the user types; `otpMethod` decides the
+  // copy — an emailed code (with resend) vs. one from an authenticator app.
+  const [needsOtp, setNeedsOtp] = useState(false)
+  const [otp, setOtp] = useState("")
+  const [otpResent, setOtpResent] = useState(false)
+  const [otpMethod, setOtpMethod] = useState<"email" | "totp">("email")
+  // The full set of methods this account has enrolled, learned from
+  // login-status. When it holds more than the one being challenged, we show a
+  // "Try another way" affordance to switch factors mid-login (mirrors Google).
+  const [otpMethods, setOtpMethods] = useState<("email" | "totp")[]>([])
+  // True while a "Try another way" switch is re-priming the server (e.g.
+  // re-issuing an email code) so the input reflects the new method cleanly.
+  const [switchingMethod, setSwitchingMethod] = useState(false)
 
   // Reset transient state whenever the modal opens or the tab switches.
   useEffect(() => {
@@ -50,6 +64,12 @@ export function AuthModal({
     setForgotSent(false)
     setNeedsVerify(false)
     setResendState("idle")
+    setNeedsOtp(false)
+    setOtp("")
+    setOtpResent(false)
+    setOtpMethod("email")
+    setOtpMethods([])
+    setSwitchingMethod(false)
   }, [mode, open])
 
   // Close on Escape and lock body scroll while open.
@@ -102,22 +122,43 @@ export function AuthModal({
       const result = await signIn("credentials", {
         email,
         password,
+        // Empty until the user reaches the code-entry step; ignored by the
+        // server unless the account has 2FA on. otpMethod tells authorize()
+        // which enrolled factor this code answers (set by "Try another way").
+        otp: needsOtp ? otp : "",
+        otpMethod: needsOtp ? otpMethod : "",
         redirect: false,
       })
 
       if (result?.error) {
         // next-auth collapses every authorize() failure into one opaque error.
         // Ask the server WHY so we can offer "resend verification" when the
-        // account exists and the only blocker is an unconfirmed email.
+        // account exists and the only blocker is an unconfirmed email, or flip
+        // to the 2FA code step when a login code is required.
         let reason = "bad_credentials"
+        let challengeMethod: "email" | "totp" = "email"
+        let enrolledMethods: ("email" | "totp")[] = []
         try {
           const r = await fetch("/api/auth/login-status", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password }),
+            // Send otp + the chosen method only once we're on the code step, so
+            // the server knows NOT to re-issue a fresh email code on a wrong-code
+            // retry, and challenges the method the user is actually answering.
+            body: JSON.stringify(
+              needsOtp
+                ? { email, password, otp, method: otpMethod }
+                : { email, password }
+            ),
           })
           const d = await r.json().catch(() => null)
           if (d?.reason) reason = d.reason
+          if (d?.method === "totp" || d?.method === "email") challengeMethod = d.method
+          if (Array.isArray(d?.methods)) {
+            enrolledMethods = d.methods.filter(
+              (m: unknown) => m === "email" || m === "totp"
+            )
+          }
         } catch {
           // fall through to generic message
         }
@@ -125,8 +166,27 @@ export function AuthModal({
         if (reason === "email_unverified") {
           setNeedsVerify(true)
           setError("Please confirm your email before logging in.")
+        } else if (reason === "otp_required") {
+          // First time we learn 2FA is on: for email the precheck just mailed a
+          // code; for totp the user reads it from their app. Flip to code entry.
+          // If we were ALREADY on the code step, the submitted code was wrong.
+          if (enrolledMethods.length > 0) setOtpMethods(enrolledMethods)
+          if (needsOtp) {
+            setError(
+              challengeMethod === "totp"
+                ? "That code is incorrect. Open your authenticator app and try again."
+                : "That code is invalid or expired. Check your email and try again."
+            )
+          } else {
+            setOtpMethod(challengeMethod)
+            setNeedsOtp(true)
+            setError(null)
+          }
         } else {
           setError("Invalid email or password.")
+          // A bad password mid-2FA drops us back to the start.
+          setNeedsOtp(false)
+          setOtp("")
         }
         setIsLoading(false)
         return
@@ -179,6 +239,50 @@ export function AuthModal({
     } catch {
       setResendState("idle")
       setError("Couldn't resend right now. Try again in a moment.")
+    }
+  }
+
+  async function handleResendOtp() {
+    if (!email || !password) return
+    setOtpResent(false)
+    setError(null)
+    try {
+      // Calling login-status WITHOUT otp re-issues a fresh code (the server only
+      // suppresses re-issue when an otp field is present).
+      await fetch("/api/auth/login-status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      })
+      setOtp("")
+      setOtpResent(true)
+    } catch {
+      setError("Couldn't resend the code. Try again in a moment.")
+    }
+  }
+
+  // "Try another way": switch the active challenge to a different enrolled
+  // method mid-login. We re-call login-status with the chosen method so the
+  // server can prime it — importantly, switching TO email (with no otp in the
+  // body) re-issues a fresh emailed code. TOTP needs no priming.
+  async function switchMethod(next: "email" | "totp") {
+    if (next === otpMethod || switchingMethod) return
+    setSwitchingMethod(true)
+    setError(null)
+    setOtp("")
+    setOtpResent(false)
+    try {
+      await fetch("/api/auth/login-status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, method: next }),
+      })
+      setOtpMethod(next)
+      if (next === "email") setOtpResent(true)
+    } catch {
+      setError("Couldn't switch methods. Try again in a moment.")
+    } finally {
+      setSwitchingMethod(false)
     }
   }
 
@@ -480,18 +584,103 @@ export function AuthModal({
                 </div>
               )}
 
+              {mode === "login" && needsOtp && (
+                <div className="rounded-lg border border-primary/40 bg-primary/10 px-3 py-3">
+                  <label className="block text-[13px] font-medium text-foreground">
+                    Enter your login code
+                  </label>
+                  {otpMethod === "totp" ? (
+                    <p className="mt-1 text-[13px] text-muted-foreground">
+                      Open your authenticator app and enter the current 6-digit
+                      code — or use one of your backup codes.
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-[13px] text-muted-foreground">
+                      We emailed a 6-digit code to{" "}
+                      <span className="text-foreground">{email}</span>. It expires
+                      in 10 minutes.
+                    </p>
+                  )}
+                  <input
+                    type="text"
+                    inputMode={otpMethod === "totp" ? "text" : "numeric"}
+                    autoComplete="one-time-code"
+                    maxLength={otpMethod === "totp" ? 9 : 6}
+                    value={otp}
+                    onChange={(e) => {
+                      const raw = e.target.value
+                      setOtp(
+                        otpMethod === "totp"
+                          ? raw.replace(/[^0-9a-zA-Z-]/g, "").slice(0, 9)
+                          : raw.replace(/\D/g, "").slice(0, 6)
+                      )
+                      setOtpResent(false)
+                    }}
+                    className="mt-2 w-full rounded-md border border-border bg-background/50 px-3 py-2 text-center font-mono text-lg tracking-[0.4em] text-foreground outline-none transition-colors focus:border-primary/60"
+                    placeholder={otpMethod === "totp" ? "000000" : "000000"}
+                    autoFocus
+                  />
+                  {otpMethod === "email" && (
+                    <button
+                      type="button"
+                      onClick={handleResendOtp}
+                      className="mt-2 text-[13px] font-medium text-primary hover:underline"
+                    >
+                      {otpResent ? "New code sent — check your inbox" : "Resend code"}
+                    </button>
+                  )}
+
+                  {/* "Try another way": offer any OTHER enrolled method. */}
+                  {otpMethods.filter((m) => m !== otpMethod).length > 0 && (
+                    <div className="mt-3 border-t border-border/60 pt-3">
+                      <p className="text-[12px] text-muted-foreground">
+                        Try another way
+                      </p>
+                      <div className="mt-1.5 flex flex-wrap gap-2">
+                        {otpMethods
+                          .filter((m) => m !== otpMethod)
+                          .map((m) => (
+                            <button
+                              key={m}
+                              type="button"
+                              onClick={() => switchMethod(m)}
+                              disabled={switchingMethod}
+                              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/50 px-3 py-1.5 text-[12px] font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-60"
+                            >
+                              {switchingMethod && (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              )}
+                              {m === "totp"
+                                ? "Use authenticator app"
+                                : "Email me a code"}
+                            </button>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={
+                  isLoading ||
+                  (needsOtp &&
+                    (otpMethod === "totp" ? otp.length < 6 : otp.length !== 6))
+                }
                 className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary py-2.5 text-sm font-medium text-primary-foreground transition-all hover:brightness-110 disabled:opacity-60"
               >
                 {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
                 {isLoading
                   ? mode === "login"
-                    ? "Logging in…"
+                    ? needsOtp
+                      ? "Verifying…"
+                      : "Logging in…"
                     : "Creating account…"
                   : mode === "login"
-                    ? "Log in"
+                    ? needsOtp
+                      ? "Verify & log in"
+                      : "Log in"
                     : "Sign up"}
               </button>
 

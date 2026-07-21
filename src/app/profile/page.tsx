@@ -16,6 +16,7 @@ import { TasksCard } from "@/components/gamification/TasksCard"
 import { SolveCalendar } from "@/components/gamification/SolveCalendar"
 import { EditProfileDialog } from "@/components/profile/EditProfileDialog"
 import { BanNotice } from "@/components/profile/BanNotice"
+import { SecurityCard } from "@/components/profile/SecurityCard"
 import { isBanActive } from "@/lib/ban"
 import { MapPin, LinkIcon } from "lucide-react"
 import type { Difficulty } from "@/types"
@@ -66,6 +67,17 @@ export default async function ProfilePage() {
         banned: true,
         bannedUntil: true,
         bannedReason: true,
+        password: true,
+        twoFactorEnabled: true,
+        twoFactorMethod: true,
+        twoFactorEmailEnabled: true,
+        twoFactorTotpEnabled: true,
+        _count: {
+          select: {
+            // Unused backup codes remaining, for the security card's counter.
+            twoFactorBackupCodes: { where: { usedAt: null } },
+          },
+        },
       },
     }),
     loadGamification(userId),
@@ -275,6 +287,15 @@ export default async function ProfilePage() {
 
               {/* Recent solves */}
               <RecentSolvesCard solves={game.recentSolves} />
+
+              {/* Account security */}
+              <SecurityCard
+                initialEmailEnabled={user?.twoFactorEmailEnabled ?? false}
+                initialTotpEnabled={user?.twoFactorTotpEnabled ?? false}
+                initialPrimary={user?.twoFactorMethod ?? null}
+                initialBackupCount={user?._count?.twoFactorBackupCodes ?? 0}
+                isPasswordAccount={Boolean(user?.password)}
+              />
             </div>
 
             {/* RIGHT rail */}

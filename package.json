@@ -17,7 +17,11 @@
     "admin:bootstrap": "tsx scripts/bootstrap-admin.mts",
     "admin:reset-password": "tsx scripts/reset-password.mts",
     "admin:whoami": "tsx scripts/whoami-admin.mts",
-    "admin:check-password": "tsx scripts/check-password.mts"
+    "admin:check-password": "tsx scripts/check-password.mts",
+    "dev:verify-email": "tsx scripts/dev-verify-email.mts",
+    "list-problems": "tsx scripts/list-problems.mts",
+    "load-test": "node scripts/load-test-judge.mjs",
+    "security-check": "tsx scripts/security-check.mts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.8",

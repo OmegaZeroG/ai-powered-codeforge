@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react"
 import MonacoEditor, { type Monaco } from "@monaco-editor/react"
+import { useSession } from "next-auth/react"
 import { useEditorStore, DEFAULT_CODE } from "@/stores/editorStore"
 import { readDraft, writeDraft } from "@/lib/draft"
 import type { Language } from "@/types"
@@ -59,6 +60,8 @@ export function Editor() {
     saveMode,
     problemStarterCode,
   } = useEditorStore()
+  const { data: session } = useSession()
+  const userId = session?.user?.id
 
   // The untouched starter code for the CURRENT bucket. A draft equal to this
   // carries no information, so we never persist it and treat it as "no draft"
@@ -96,10 +99,10 @@ export function Editor() {
       saveModeRef.current === "switch" &&
       (prev.problemId !== problemId || prev.language !== language)
     ) {
-      writeDraft(prev.problemId, prev.language, prev.code, prev.pristine)
+      writeDraft(userId, prev.problemId, prev.language, prev.code, prev.pristine)
     }
 
-    const saved = readDraft(problemId, language, pristine)
+    const saved = readDraft(userId, problemId, language, pristine)
     // Self-heal drafts corrupted before the write-guard existed: an old draft
     // may hold the default template (which differs from this problem's real
     // starter). Discard it so the real starter code shows through.
@@ -114,7 +117,7 @@ export function Editor() {
       pristine,
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [problemId, language])
+  }, [userId, problemId, language])
 
   // Keep the current bucket's code fresh on the ref so a later switch flushes
   // the latest edits.
@@ -128,11 +131,11 @@ export function Editor() {
     if (saveMode !== "auto") return
     if (isPristine(code)) return
     const t = setTimeout(() => {
-      writeDraft(problemId, language, code, pristine)
+      writeDraft(userId, problemId, language, code, pristine)
     }, 800)
     return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code, saveMode, problemId, language])
+  }, [code, saveMode, problemId, language, userId])
 
   return (
     <div className="h-full w-full">

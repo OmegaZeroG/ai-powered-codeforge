@@ -78,7 +78,7 @@ export function Toolbar() {
   }, [menuOpen])
 
   const handleSave = () => {
-    if (writeDraft(problemId, language, code)) {
+    if (writeDraft(session?.user?.id, problemId, language, code)) {
       setSaved(true)
       setTimeout(() => setSaved(false), 1500)
     }

@@ -5,9 +5,23 @@ import type { Language } from "@/types"
 // OutputPanel (save-after-submission). Keeping the storage keys and the write
 // logic in one place avoids the three call sites drifting apart.
 
-// localStorage key for a draft, scoped per problem + language. The scratch
-// editor (no problem loaded) gets its own "scratch" bucket per language.
-export function draftKey(problemId: string | null, language: Language): string {
+// localStorage key for a draft, scoped per user + problem + language. The
+// scratch editor (no problem loaded) gets its own "scratch" bucket per
+// language. `userId` MUST be included — without it, two accounts sharing a
+// browser would read and overwrite each other's saved code.
+export function draftKey(
+  userId: string | null | undefined,
+  problemId: string | null,
+  language: Language,
+): string {
+  return `codeforge:draft:${userId ?? "anon"}:${problemId ?? "scratch"}:${language}`
+}
+
+// Pre-user-scoping key format. There's no way to know which account actually
+// wrote a legacy draft, so we can't safely hand it to whoever logs in next —
+// that would just move the cross-account leak instead of fixing it. We only
+// ever delete these, never read or adopt them.
+function legacyDraftKey(problemId: string | null, language: Language): string {
   return `codeforge:draft:${problemId ?? "scratch"}:${language}`
 }
 
@@ -20,6 +34,7 @@ export function draftKey(problemId: string | null, language: Language): string {
 // a draft, and we clear any stale one. This prevents a bogus draft from later
 // overriding the real starter code.
 export function writeDraft(
+  userId: string | null | undefined,
   problemId: string | null,
   language: Language,
   code: string,
@@ -27,10 +42,10 @@ export function writeDraft(
 ): boolean {
   try {
     if (pristine !== undefined && code === pristine) {
-      localStorage.removeItem(draftKey(problemId, language))
+      localStorage.removeItem(draftKey(userId, problemId, language))
       return false
     }
-    localStorage.setItem(draftKey(problemId, language), code)
+    localStorage.setItem(draftKey(userId, problemId, language), code)
     return true
   } catch {
     return false
@@ -42,14 +57,22 @@ export function writeDraft(
 // treated as absent (and cleaned up) — this self-heals drafts corrupted before
 // the write-guard existed.
 export function readDraft(
+  userId: string | null | undefined,
   problemId: string | null,
   language: Language,
   pristine?: string,
 ): string | null {
   try {
-    const v = localStorage.getItem(draftKey(problemId, language))
+    const v = localStorage.getItem(draftKey(userId, problemId, language))
+
+    // Drop any leftover pre-user-scoping draft. We deliberately do NOT adopt
+    // it into this account — we don't know who actually wrote it, and doing
+    // so would just hand one account's code to whichever account happens to
+    // load the problem first.
+    localStorage.removeItem(legacyDraftKey(problemId, language))
+
     if (v !== null && pristine !== undefined && v === pristine) {
-      localStorage.removeItem(draftKey(problemId, language))
+      localStorage.removeItem(draftKey(userId, problemId, language))
       return null
     }
     return v

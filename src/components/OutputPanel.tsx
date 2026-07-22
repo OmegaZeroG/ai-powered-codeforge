@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 import { useEditorStore } from "@/stores/editorStore"
 import { useAIStore } from "@/stores/aiStore"
 import {
@@ -31,6 +32,7 @@ export function OutputPanel() {
     problemStarterCode,
   } = useEditorStore()
   const { isPanelOpen, togglePanel } = useAIStore()
+  const { data: session } = useSession()
   const router = useRouter()
   // Transient pipeline status ("Queued..." / "Judging...") shown while polling.
   const [statusText, setStatusText] = useState<string | null>(null)
@@ -46,7 +48,7 @@ export function OutputPanel() {
     // so the last submitted version is always kept. The pristine guard skips a
     // save when the code is still the untouched starter.
     if (saveMode === "submit") {
-      writeDraft(problemId, language, code, problemStarterCode?.[language])
+      writeDraft(session?.user?.id, problemId, language, code, problemStarterCode?.[language])
     }
     setIsRunning(true)
     setResult(null)

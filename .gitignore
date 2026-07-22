@@ -47,3 +47,10 @@ next-env.d.ts
 AGENTS.md
 CLAUDE.md
 COMMANDS.local.md
+/docs
+
+# local dataset, not meant for the public repo
+/Dataset
+
+# load-test JSON reports (local test artifacts)
+/scripts/out

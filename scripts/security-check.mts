@@ -43,15 +43,20 @@ function record(name: string, status: Result["status"], detail: string) {
 }
 
 // --- cookie jar (same minimal pattern as load-test-judge.mjs) ---
+// `getSetCookie()` is a real Fetch API method (multi-value Set-Cookie access)
+// but not yet in the lib.dom.d.ts Headers type this project targets, so we
+// widen the type locally instead of reaching for `any`.
+type HeadersWithGetSetCookie = Headers & { getSetCookie?: () => string[] }
+
 const jar = new Map<string, string>()
+function extractSetCookieHeaders(res: Response): string[] {
+  const headers = res.headers as HeadersWithGetSetCookie
+  if (typeof headers.getSetCookie === "function") return headers.getSetCookie()
+  const single = res.headers.get("set-cookie")
+  return single ? [single] : []
+}
 function absorbSetCookie(res: Response) {
-  const cookies =
-    typeof (res.headers as any).getSetCookie === "function"
-      ? (res.headers as any).getSetCookie()
-      : res.headers.get("set-cookie")
-        ? [res.headers.get("set-cookie") as string]
-        : []
-  for (const c of cookies) {
+  for (const c of extractSetCookieHeaders(res)) {
     const [pair] = c.split(";")
     const eq = pair.indexOf("=")
     if (eq === -1) continue
@@ -62,11 +67,7 @@ function cookieHeader() {
   return [...jar.entries()].map(([k, v]) => `${k}=${v}`).join("; ")
 }
 function rawSetCookieHeaders(res: Response): string[] {
-  return typeof (res.headers as any).getSetCookie === "function"
-    ? (res.headers as any).getSetCookie()
-    : res.headers.get("set-cookie")
-      ? [res.headers.get("set-cookie") as string]
-      : []
+  return extractSetCookieHeaders(res)
 }
 
 async function loginCredentials(email: string, password: string, otp = "", otpMethod = "") {
@@ -236,7 +237,8 @@ async function checkTwoFactorBypassResistance() {
   let wrongCodeEverSucceeded = false
   for (const badCode of ["000000", "111111", "999999"]) {
     jar.clear()
-    const res = await loginCredentials(TWOFA_EMAIL, TWOFA_PASSWORD, badCode, "totp")
+    // Only the side effect on `jar` (via absorbSetCookie) matters here.
+    await loginCredentials(TWOFA_EMAIL, TWOFA_PASSWORD, badCode, "totp")
     const gotSession = [...jar.keys()].some((k) => k.includes("session-token"))
     if (gotSession) wrongCodeEverSucceeded = true
   }

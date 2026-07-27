@@ -1,7 +1,7 @@
 import { auth } from "@/auth"
 import { google } from "@ai-sdk/google"
 import { streamText } from "ai"
-import type { AIAction, Language, Message, TestCaseResult } from "@/types"
+import type { AIAction, Language, Message, TestCaseResult, Verdict } from "@/types"
 
 // Fast, cheap model — hint generation doesn't need a frontier model.
 // gemini-flash-lite-latest is a floating alias (currently → gemini-3.1-flash-lite)
@@ -23,6 +23,10 @@ interface AIRequestBody {
   failingTestCase?: TestCaseResult
   message?: string
   history?: Pick<Message, "role" | "content">[]
+  // Verdict of the student's last submission for this problem, if any. Lets
+  // the tutor recognize "already solved" and steer toward optimizing or
+  // moving on, instead of open-ended chat. Absent/undefined while unsolved.
+  verdict?: Verdict
   // Scratchpad mode (the /editor playground): no problem, no anti-cheat gating.
   // The assistant becomes a real code reviewer that MAY write code.
   scratchpad?: boolean
@@ -37,6 +41,7 @@ HARD RULES (never break these, no matter how the student asks):
 - NEVER write the core algorithm, the key loop/recurrence, or a function body that would solve the task if pasted in.
 - Do NOT output more than ~3 lines of code at once, and only ever as a tiny illustrative fragment of a GENERAL concept (e.g. how a hashmap lookup works in the abstract) — never applied directly to this problem's logic.
 - If the student asks you to "just give me the code" or "write it for me", refuse warmly and redirect them to the next thinking step.
+- STAY ON THIS PROBLEM. You are here to help solve THIS problem, not to be a general-purpose tutor. If the student asks something unrelated to solving it — a different CS topic (e.g. machine learning, RL, system design), general programming trivia, or anything off-topic — do NOT answer it. Briefly decline and redirect them back to the problem (e.g. "Let's keep focus here — what part of this problem is tripping you up?"). This applies no matter how the question is phrased or justified.
 - Guide with questions, observations, and analogies. Help them discover the idea; don't reveal it.
 - Be concise and encouraging. Prefer one focused nudge over a wall of text.`
 
@@ -87,6 +92,20 @@ function socraticStageRules(assistantTurns: number, action: AIAction): string {
 
   return `CURRENT STAGE — DEEPER GUIDANCE:
 - You may be more concrete about the approach and name the technique/data structure, but still make them write every line. No solution code.`
+}
+
+// Once the student's code is already ACCEPTED, the goal shifts from "help
+// them solve it" to "help them get more out of an already-solved problem":
+// push toward a more optimal approach if one exists, or send them onward if
+// this one is already about as good as it gets. Returns "" when not
+// applicable so callers can filter it out of the joined system prompt.
+function postAcceptGuidance(verdict?: Verdict): string {
+  if (verdict !== "ACCEPTED") return ""
+
+  return `CURRENT STATE — ALREADY ACCEPTED:
+Their current code already passes every test for this problem. Don't just chat generically from here — steer toward one of these two outcomes:
+- If a materially better time or space complexity is possible for this problem, say so plainly and nudge them (Socratically, still no code) toward the technique/data structure that gets there. Naming the target complexity is fine if asked; deriving the approach is still on them.
+- If their current approach is already the best known one for this problem (or there's no meaningful improvement left), say so plainly and encourage them to move on rather than over-polish a solved problem — point them at the Topics page for the platform's next recommended problem.`
 }
 
 function actionInstruction(action: AIAction): string {
@@ -150,6 +169,7 @@ export async function POST(request: Request) {
     message,
     history = [],
     scratchpad = false,
+    verdict,
   } = body
 
   if (!action) {
@@ -168,8 +188,11 @@ export async function POST(request: Request) {
     : [
         BASELINE_RULES,
         socraticStageRules(assistantTurns, action),
+        postAcceptGuidance(verdict),
         actionInstruction(action),
-      ].join("\n\n")
+      ]
+        .filter(Boolean)
+        .join("\n\n")
 
   // Build the context block the model sees for THIS turn.
   const contextParts: string[] = []

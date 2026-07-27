@@ -1,17 +1,4 @@
-#!/usr/bin/env node
-// Installs the language runtimes that CodeForge's judge (src/lib/piston.ts)
-// expects onto a self-hosted Piston instance (see docker-compose.piston.yml).
-//
-// Usage:
-//   node scripts/setup-piston.mjs
-//   PISTON_URL=http://localhost:2000/api/v2 node scripts/setup-piston.mjs
-//
-// Note: Piston's package repo (/api/v2/packages) indexes packages by the
-// underlying toolchain name, which isn't always the same as the runtime
-// alias RUNTIME_MAP (src/lib/piston.ts) uses for /execute. In particular:
-//   - the "javascript" execute alias is provided by the "node" package
-//   - the "c++" execute alias is provided by the "gcc" package
-// Keep the versions below in sync with RUNTIME_MAP.
+
 const PISTON_URL = process.env.PISTON_URL || "http://localhost:2000/api/v2"
 
 const REQUIRED_PACKAGES = [
@@ -49,10 +36,7 @@ async function getInstalledPackages() {
   return res.json()
 }
 
-// Some packages (gcc in particular) take much longer to download/install
-// than the others, so give installs a generous timeout rather than relying
-// on undici's defaults, and retry once on transient network errors (e.g.
-// "fetch failed" from a connection reset if the container is briefly busy).
+
 const INSTALL_TIMEOUT_MS = 15 * 60_000
 const INSTALL_RETRIES = 2
 

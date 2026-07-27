@@ -91,6 +91,7 @@ export function AIPanel() {
           message: userMessage,
           history,
           scratchpad: isScratchpad,
+          verdict: result?.verdict,
         }),
       })
 

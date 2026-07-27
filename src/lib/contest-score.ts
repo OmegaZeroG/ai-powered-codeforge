@@ -121,6 +121,9 @@ export function compareScores(a: ParticipantScore, b: ParticipantScore): number 
   if (a.penaltyTime !== b.penaltyTime) return a.penaltyTime - b.penaltyTime
   const at = a.lastAcceptedAt?.getTime() ?? Infinity
   const bt = b.lastAcceptedAt?.getTime() ?? Infinity
+  // Infinity - Infinity is NaN, which broke the tie-detection two
+  // zero-solve participants (both null) rely on in rankParticipants.
+  if (at === bt) return 0
   return at - bt
 }
 

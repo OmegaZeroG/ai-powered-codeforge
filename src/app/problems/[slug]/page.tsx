@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import { prisma } from "@/lib/prisma"
-import { Editor } from "@/components/Editor"
 import { Toolbar } from "@/components/Toolbar"
-import { OutputPanel } from "@/components/OutputPanel"
+import { EditorOutputSplit } from "@/components/EditorOutputSplit"
 import { ProblemLoader } from "@/components/ProblemLoader"
+import { ProblemStatementPanel } from "@/components/ProblemStatementPanel"
 import { ProtectedStatement } from "@/components/ProtectedStatement"
 import { AIPanelMount } from "@/components/AIPanelMount"
 import { ProblemDetail, Language } from "@/types"
@@ -52,8 +52,8 @@ export default async function ProblemPage({
       <Toolbar />
 
       <div className="flex-1 flex overflow-hidden min-h-0">
-        {/* Statement panel */}
-        <div className="w-[420px] shrink-0 border-r border-edge overflow-auto px-6 py-6 min-h-0">
+        {/* Statement panel (drag handle on its right edge) */}
+        <ProblemStatementPanel>
           <Link
             href={`/topics/${problemDetail.topic.slug}`}
             className="text-fg-muted text-sm hover:text-white transition-colors"
@@ -112,19 +112,11 @@ export default async function ProblemPage({
               </div>
             )}
           </ProtectedStatement>
-        </div>
+        </ProblemStatementPanel>
 
-        {/* Editor + output */}
-        <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-          <div className="flex-1 overflow-hidden min-h-0">
-            <Editor />
-          </div>
-          <div className="h-56">
-            <OutputPanel />
-          </div>
-        </div>
+        <EditorOutputSplit />
 
-        {/* AI tutor panel (mounts when toggled open) */}
+        {/* AI tutor panel (mounts when toggled open, drag handle on its left edge) */}
         <AIPanelMount />
       </div>
     </div>

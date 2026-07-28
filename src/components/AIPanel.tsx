@@ -136,7 +136,7 @@ export function AIPanel() {
   }
 
   return (
-    <div className="w-[360px] shrink-0 border-l border-edge bg-ink-deep flex flex-col min-h-0">
+    <div className="w-full h-full border-l border-edge bg-ink-deep flex flex-col min-h-0">
       {/* Header */}
       <div className="h-12 shrink-0 border-b border-edge flex items-center justify-between px-4">
         <div className="flex items-center gap-2.5">

@@ -92,7 +92,7 @@ export function LandingPage({
         <TrustedBy />
         <MidPitch />
         <Features />
-        <Pricing isLoggedIn={isLoggedIn} onGetStarted={() => openAuth("signup")} />
+        <FreeForever isLoggedIn={isLoggedIn} onGetStarted={() => openAuth("signup")} />
         <Faq />
       </main>
       <Footer />
@@ -166,7 +166,7 @@ function Nav({
                 {l.label}
               </Link>
             ))
-          : ["Features", "Pricing", "FAQ"].map((l) => (
+          : ["Features", "Free", "FAQ"].map((l) => (
               <a
                 key={l}
                 href={`#${l.toLowerCase()}`}
@@ -717,51 +717,16 @@ function Features() {
   )
 }
 
-const PLANS = [
-  {
-    name: "Starter",
-    price: "Free",
-    per: "",
-    desc: "Everything you need to warm up.",
-    features: [
-      "Access to 500+ problems",
-      "Basic AI hints",
-      "Community leaderboard",
-      "Weekly practice sets",
-    ],
-    highlight: false,
-  },
-  {
-    name: "Pro",
-    price: "$12",
-    per: "/mo",
-    desc: "For serious daily practice.",
-    features: [
-      "Full problem library",
-      "Adaptive path & analytics",
-      "Advanced AI reasoning",
-      "Rated contest access",
-      "Runtime & memory metrics",
-    ],
-    highlight: true,
-  },
-  {
-    name: "Team",
-    price: "$45",
-    per: "/mo",
-    desc: "For interview prep cohorts.",
-    features: [
-      "Everything in Pro",
-      "Shared team dashboard",
-      "Custom problem sets",
-      "Priority judge queue",
-      "Admin & billing tools",
-    ],
-    highlight: false,
-  },
+const FREE_FEATURES = [
+  "Access to 500+ problems",
+  "Adaptive difficulty & analytics",
+  "AI hints & complexity reasoning",
+  "Rated weekly contests",
+  "Runtime & memory metrics",
+  "Community leaderboard",
 ]
 
-function Pricing({
+function FreeForever({
   isLoggedIn,
   onGetStarted,
 }: {
@@ -769,87 +734,53 @@ function Pricing({
   onGetStarted: () => void
 }) {
   return (
-    <section id="pricing" className="relative z-10 mx-auto max-w-6xl px-6 py-24">
+    <section id="free" className="relative z-10 mx-auto max-w-4xl px-6 py-24">
       <motion.div
-        initial={{ opacity: 0, y: 16 }}
+        initial={{ opacity: 0, y: 24 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        className="text-center"
+        className="relative overflow-hidden rounded-2xl border border-primary/60 bg-gradient-to-b from-primary/15 via-card to-card p-10 text-center backdrop-blur glow-orange sm:p-14"
       >
-        <h2 className="font-sans text-3xl font-medium tracking-tight sm:text-4xl">
-          Find the Plan That Works for You
+        <span className="inline-flex items-center rounded-full bg-primary px-3 py-1 text-[11px] font-medium tracking-wide text-primary-foreground">
+          Free. No catch.
+        </span>
+        <h2 className="mt-5 font-sans text-3xl font-medium tracking-tight sm:text-4xl">
+          Built Free. Staying Free.
         </h2>
-        <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground">
-          Start free. Upgrade when you&apos;re ready to push harder.
+        <p className="mx-auto mt-3 max-w-lg text-sm text-muted-foreground">
+          No tiers, no paywalls, no &quot;upgrade to unlock this problem.&quot;
+          The only thing that compounds here is your own consistency — show
+          up, solve, and the platform gives you everything back for it.
         </p>
-      </motion.div>
 
-      <div className="mt-14 grid gap-5 md:grid-cols-3">
-        {PLANS.map((p, i) => (
-          <motion.div
-            key={p.name}
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: i * 0.08 }}
-            className={`relative overflow-hidden rounded-2xl border p-7 backdrop-blur ${
-              p.highlight
-                ? "border-primary/60 bg-gradient-to-b from-primary/15 via-card to-card glow-orange"
-                : "border-border bg-card/60"
-            }`}
+        <ul className="mx-auto mt-8 grid max-w-md gap-3 text-left sm:grid-cols-2">
+          {FREE_FEATURES.map((f) => (
+            <li
+              key={f}
+              className="flex items-start gap-2 text-[13px] text-muted-foreground"
+            >
+              <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+              <span>{f}</span>
+            </li>
+          ))}
+        </ul>
+
+        {isLoggedIn ? (
+          <Link
+            href="/topics"
+            className="mt-9 inline-flex items-center justify-center gap-1.5 rounded-full bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground transition-all hover:brightness-110"
           >
-            {p.highlight && (
-              <span className="absolute right-5 top-5 rounded-full bg-primary px-2.5 py-0.5 text-[10px] font-medium text-primary-foreground">
-                Popular
-              </span>
-            )}
-            <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-              {p.name}
-            </div>
-            <p className="mt-2 text-sm text-muted-foreground">{p.desc}</p>
-            <div className="mt-6 flex items-baseline gap-1">
-              <span className="font-sans text-4xl font-medium tracking-tight">
-                {p.price}
-              </span>
-              <span className="text-sm text-muted-foreground">{p.per}</span>
-            </div>
-            {isLoggedIn ? (
-              <Link
-                href="/topics"
-                className={`mt-6 inline-flex w-full items-center justify-center rounded-full px-4 py-2.5 text-sm font-medium transition-all ${
-                  p.highlight
-                    ? "bg-primary text-primary-foreground hover:brightness-110"
-                    : "border border-border text-foreground hover:border-primary/40 hover:bg-muted"
-                }`}
-              >
-                Start now
-              </Link>
-            ) : (
-              <button
-                onClick={onGetStarted}
-                className={`mt-6 inline-flex w-full items-center justify-center rounded-full px-4 py-2.5 text-sm font-medium transition-all ${
-                  p.highlight
-                    ? "bg-primary text-primary-foreground hover:brightness-110"
-                    : "border border-border text-foreground hover:border-primary/40 hover:bg-muted"
-                }`}
-              >
-                Start now
-              </button>
-            )}
-            <ul className="mt-6 space-y-2.5">
-              {p.features.map((f) => (
-                <li
-                  key={f}
-                  className="flex items-start gap-2 text-[13px] text-muted-foreground"
-                >
-                  <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-                  <span>{f}</span>
-                </li>
-              ))}
-            </ul>
-          </motion.div>
-        ))}
-      </div>
+            Start now
+          </Link>
+        ) : (
+          <button
+            onClick={onGetStarted}
+            className="mt-9 inline-flex items-center justify-center gap-1.5 rounded-full bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground transition-all hover:brightness-110"
+          >
+            Start now
+          </button>
+        )}
+      </motion.div>
     </section>
   )
 }
@@ -869,11 +800,11 @@ const FAQS = [
   },
   {
     q: "Can I use it for interview prep?",
-    a: "Yes. The adaptive path and topic progression are designed around common interview patterns, and Team plans support cohort-style prep.",
+    a: "Yes. The adaptive path and topic progression are designed around common interview patterns, all free.",
   },
   {
     q: "Do you support contests?",
-    a: "Weekly rated contests are included with Pro. Team plans can host private contests for their members.",
+    a: "Weekly rated contests are free for everyone, with ICPC-style scoring and a real leaderboard.",
   },
 ]
 
@@ -970,7 +901,7 @@ function Footer() {
             title="Product"
             links={[
               { label: "Features", href: "#features" },
-              { label: "Pricing", href: "#pricing" },
+              { label: "Free", href: "#free" },
               { label: "Contests", href: "#" },
             ]}
           />

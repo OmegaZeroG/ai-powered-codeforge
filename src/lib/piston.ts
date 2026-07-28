@@ -1,4 +1,8 @@
 const PISTON_URL = process.env.PISTON_URL || "http://localhost:2000/api/v2"
+// Set only in production, where Piston sits behind a public reverse proxy
+// (see deploy/piston-nginx.conf) that gates access on this same token. Local
+// dev talks to Piston directly with no proxy in front, so this stays unset.
+const PISTON_AUTH_TOKEN = process.env.PISTON_AUTH_TOKEN
 
 const RUNTIME_MAP: Record<
   string,
@@ -36,7 +40,10 @@ export async function runCode(
 
   const res = await fetch(`${PISTON_URL}/execute`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(PISTON_AUTH_TOKEN ? { Authorization: `Bearer ${PISTON_AUTH_TOKEN}` } : {}),
+    },
     body: JSON.stringify({
       language: runtime.language,
       version: runtime.version,

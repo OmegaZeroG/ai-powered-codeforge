@@ -7,7 +7,10 @@ services:
     restart: unless-stopped
     privileged: true
     ports:
-      - "2000:2000"
+      # Bound to loopback only — never exposed directly to the network.
+      # Public access (production) goes through deploy/piston-nginx.conf,
+      # which gates it on PISTON_AUTH_TOKEN before forwarding here.
+      - "127.0.0.1:2000:2000"
     volumes:
       - piston-packages:/piston/packages
     tmpfs:

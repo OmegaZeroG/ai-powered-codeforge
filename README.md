@@ -223,6 +223,7 @@ Copy `.env.example` to `.env` and fill in:
 | `NEXTAUTH_SECRET` | NextAuth JWT signing secret |
 | `NEXTAUTH_URL` | App base URL (`http://localhost:3000` in dev) |
 | `PISTON_URL` | Piston API base (defaults to local Docker) |
+| `PISTON_AUTH_TOKEN` | Bearer token for a production Piston instance behind `deploy/piston-nginx.conf` (unset for local dev — see that file) |
 | `JUDGE_CONCURRENCY` | Judge worker lanes — how many submissions it judges in parallel (default `4`) |
 | `ANTICHEAT_SECRET` | Secret used to derive per-problem canary tokens |
 | `GOOGLE_GENERATIVE_AI_API_KEY` | Gemini key for the AI tutor ([free tier](https://aistudio.google.com/apikey)) |

@@ -2545,6 +2545,504 @@ async function main() {
     },
   });
 
+  const strings = await prisma.topic.upsert({
+    where: { slug: "strings" },
+    update: {
+      name: "Strings",
+      slug: "strings",
+      description: "Classic string manipulation, parsing, and pattern-matching problems.",
+      order: 10,
+    },
+    create: {
+      name: "Strings",
+      slug: "strings",
+      description: "Classic string manipulation, parsing, and pattern-matching problems.",
+      order: 10,
+    },
+  });
+
+  await prisma.problem.upsert({
+    where: { slug: "valid-anagram" },
+    update: {
+      title: "Valid Anagram",
+      slug: "valid-anagram",
+      statement:
+        "Given two strings `s` and `t`, return `true` if `t` is an anagram of `s`, and `false` otherwise. An anagram is formed by rearranging the letters of a word using all the original letters exactly once.\n\nInput format: two lines, `s` then `t`.\nOutput format: `true` or `false`.",
+      constraints: "1 <= s.length, t.length <= 5 * 10^4\ns and t consist of lowercase English letters only.",
+      difficulty: "EASY",
+      order: 1,
+      topicId: strings.id,
+      starterCode: {
+        javascript:
+          "function isAnagram(s, t) {\n  // your code here\n}\n\nconst lines = require('fs').readFileSync(0, 'utf8').split('\\n')\nconst s = lines[0]\nconst t = lines[1]\nconsole.log(isAnagram(s, t))",
+        cpp:
+          "#include <bits/stdc++.h>\nusing namespace std;\n\nbool isAnagram(string s, string t) {\n    // your code here\n    return false;\n}\n\nint main() {\n    string s, t;\n    getline(cin, s);\n    getline(cin, t);\n    cout << (isAnagram(s, t) ? \"true\" : \"false\") << endl;\n    return 0;\n}",
+        java:
+          "import java.util.*;\nimport java.io.*;\n\npublic class Main {\n    static boolean isAnagram(String s, String t) {\n        // your code here\n        return false;\n    }\n\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        String s = br.readLine();\n        String t = br.readLine();\n        System.out.println(isAnagram(s, t) ? \"true\" : \"false\");\n    }\n}",
+        python:
+          "def is_anagram(s, t):\n    # your code here\n    pass\n\nimport sys\nlines = sys.stdin.read().split('\\n')\ns = lines[0]\nt = lines[1]\nprint(str(is_anagram(s, t)).lower())",
+      },
+      testCases: {
+        deleteMany: {},
+        create: [
+          { input: "anagram\nnagaram", expected: "true", isSample: true, order: 1 },
+          { input: "rat\ncar", expected: "false", isSample: true, order: 2 },
+          { input: "a\nab", expected: "false", isSample: false, order: 3 },
+          { input: "aacc\nccac", expected: "false", isSample: false, order: 4 },
+        ],
+      },
+    },
+    create: {
+      title: "Valid Anagram",
+      slug: "valid-anagram",
+      statement:
+        "Given two strings `s` and `t`, return `true` if `t` is an anagram of `s`, and `false` otherwise. An anagram is formed by rearranging the letters of a word using all the original letters exactly once.\n\nInput format: two lines, `s` then `t`.\nOutput format: `true` or `false`.",
+      constraints: "1 <= s.length, t.length <= 5 * 10^4\ns and t consist of lowercase English letters only.",
+      difficulty: "EASY",
+      order: 1,
+      topicId: strings.id,
+      starterCode: {
+        javascript:
+          "function isAnagram(s, t) {\n  // your code here\n}\n\nconst lines = require('fs').readFileSync(0, 'utf8').split('\\n')\nconst s = lines[0]\nconst t = lines[1]\nconsole.log(isAnagram(s, t))",
+        cpp:
+          "#include <bits/stdc++.h>\nusing namespace std;\n\nbool isAnagram(string s, string t) {\n    // your code here\n    return false;\n}\n\nint main() {\n    string s, t;\n    getline(cin, s);\n    getline(cin, t);\n    cout << (isAnagram(s, t) ? \"true\" : \"false\") << endl;\n    return 0;\n}",
+        java:
+          "import java.util.*;\nimport java.io.*;\n\npublic class Main {\n    static boolean isAnagram(String s, String t) {\n        // your code here\n        return false;\n    }\n\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        String s = br.readLine();\n        String t = br.readLine();\n        System.out.println(isAnagram(s, t) ? \"true\" : \"false\");\n    }\n}",
+        python:
+          "def is_anagram(s, t):\n    # your code here\n    pass\n\nimport sys\nlines = sys.stdin.read().split('\\n')\ns = lines[0]\nt = lines[1]\nprint(str(is_anagram(s, t)).lower())",
+      },
+      testCases: {
+        create: [
+          { input: "anagram\nnagaram", expected: "true", isSample: true, order: 1 },
+          { input: "rat\ncar", expected: "false", isSample: true, order: 2 },
+          { input: "a\nab", expected: "false", isSample: false, order: 3 },
+          { input: "aacc\nccac", expected: "false", isSample: false, order: 4 },
+        ],
+      },
+    },
+  });
+
+  await prisma.problem.upsert({
+    where: { slug: "reverse-words-in-a-string" },
+    update: {
+      title: "Reverse Words in a String",
+      slug: "reverse-words-in-a-string",
+      statement:
+        "Given an input string `s`, reverse the order of the words.\n\nA word is a sequence of non-space characters. Words in `s` may be separated by more than one space, and `s` may have leading or trailing spaces. Return a string with the words in reverse order, joined by a single space, with no leading or trailing spaces.\n\nInput format: a single line containing `s`.\nOutput format: the words of `s` in reverse order, single-space separated.",
+      constraints: "1 <= s.length <= 10^4\ns contains English letters, digits, and spaces ' '.\ns contains at least one word.",
+      difficulty: "EASY",
+      order: 2,
+      topicId: strings.id,
+      starterCode: {
+        javascript:
+          "function reverseWords(s) {\n  // your code here\n}\n\nconst s = require('fs').readFileSync(0, 'utf8').split('\\n')[0]\nconsole.log(reverseWords(s))",
+        cpp:
+          "#include <bits/stdc++.h>\nusing namespace std;\n\nstring reverseWords(string s) {\n    // your code here\n    return \"\";\n}\n\nint main() {\n    string s;\n    getline(cin, s);\n    cout << reverseWords(s) << endl;\n    return 0;\n}",
+        java:
+          "import java.util.*;\nimport java.io.*;\n\npublic class Main {\n    static String reverseWords(String s) {\n        // your code here\n        return \"\";\n    }\n\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        String s = br.readLine();\n        if (s == null) s = \"\";\n        System.out.println(reverseWords(s));\n    }\n}",
+        python:
+          "def reverse_words(s):\n    # your code here\n    pass\n\nimport sys\ns = sys.stdin.readline().rstrip('\\n')\nprint(reverse_words(s))",
+      },
+      testCases: {
+        deleteMany: {},
+        create: [
+          { input: "the sky is blue", expected: "blue is sky the", isSample: true, order: 1 },
+          { input: "  hello   world  ", expected: "world hello", isSample: true, order: 2 },
+          { input: "a good   example", expected: "example good a", isSample: false, order: 3 },
+        ],
+      },
+    },
+    create: {
+      title: "Reverse Words in a String",
+      slug: "reverse-words-in-a-string",
+      statement:
+        "Given an input string `s`, reverse the order of the words.\n\nA word is a sequence of non-space characters. Words in `s` may be separated by more than one space, and `s` may have leading or trailing spaces. Return a string with the words in reverse order, joined by a single space, with no leading or trailing spaces.\n\nInput format: a single line containing `s`.\nOutput format: the words of `s` in reverse order, single-space separated.",
+      constraints: "1 <= s.length <= 10^4\ns contains English letters, digits, and spaces ' '.\ns contains at least one word.",
+      difficulty: "EASY",
+      order: 2,
+      topicId: strings.id,
+      starterCode: {
+        javascript:
+          "function reverseWords(s) {\n  // your code here\n}\n\nconst s = require('fs').readFileSync(0, 'utf8').split('\\n')[0]\nconsole.log(reverseWords(s))",
+        cpp:
+          "#include <bits/stdc++.h>\nusing namespace std;\n\nstring reverseWords(string s) {\n    // your code here\n    return \"\";\n}\n\nint main() {\n    string s;\n    getline(cin, s);\n    cout << reverseWords(s) << endl;\n    return 0;\n}",
+        java:
+          "import java.util.*;\nimport java.io.*;\n\npublic class Main {\n    static String reverseWords(String s) {\n        // your code here\n        return \"\";\n    }\n\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        String s = br.readLine();\n        if (s == null) s = \"\";\n        System.out.println(reverseWords(s));\n    }\n}",
+        python:
+          "def reverse_words(s):\n    # your code here\n    pass\n\nimport sys\ns = sys.stdin.readline().rstrip('\\n')\nprint(reverse_words(s))",
+      },
+      testCases: {
+        create: [
+          { input: "the sky is blue", expected: "blue is sky the", isSample: true, order: 1 },
+          { input: "  hello   world  ", expected: "world hello", isSample: true, order: 2 },
+          { input: "a good   example", expected: "example good a", isSample: false, order: 3 },
+        ],
+      },
+    },
+  });
+
+  await prisma.problem.upsert({
+    where: { slug: "first-unique-character-in-a-string" },
+    update: {
+      title: "First Unique Character in a String",
+      slug: "first-unique-character-in-a-string",
+      statement:
+        "Given a string `s`, find the first non-repeating character in it and return its index. If it does not exist, return `-1`.\n\nInput format: a single line containing `s`.\nOutput format: a single integer, the 0-based index of the first non-repeating character, or `-1`.",
+      constraints: "1 <= s.length <= 10^5\ns consists of only lowercase English letters.",
+      difficulty: "EASY",
+      order: 3,
+      topicId: strings.id,
+      starterCode: {
+        javascript:
+          "function firstUniqChar(s) {\n  // your code here\n}\n\nconst s = require('fs').readFileSync(0, 'utf8').split('\\n')[0]\nconsole.log(firstUniqChar(s))",
+        cpp:
+          "#include <bits/stdc++.h>\nusing namespace std;\n\nint firstUniqChar(string s) {\n    // your code here\n    return -1;\n}\n\nint main() {\n    string s;\n    getline(cin, s);\n    cout << firstUniqChar(s) << endl;\n    return 0;\n}",
+        java:
+          "import java.util.*;\nimport java.io.*;\n\npublic class Main {\n    static int firstUniqChar(String s) {\n        // your code here\n        return -1;\n    }\n\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        String s = br.readLine();\n        if (s == null) s = \"\";\n        System.out.println(firstUniqChar(s));\n    }\n}",
+        python:
+          "def first_uniq_char(s):\n    # your code here\n    pass\n\nimport sys\ns = sys.stdin.readline().rstrip('\\n')\nprint(first_uniq_char(s))",
+      },
+      testCases: {
+        deleteMany: {},
+        create: [
+          { input: "leetcode", expected: "0", isSample: true, order: 1 },
+          { input: "loveleetcode", expected: "2", isSample: true, order: 2 },
+          { input: "aabb", expected: "-1", isSample: false, order: 3 },
+        ],
+      },
+    },
+    create: {
+      title: "First Unique Character in a String",
+      slug: "first-unique-character-in-a-string",
+      statement:
+        "Given a string `s`, find the first non-repeating character in it and return its index. If it does not exist, return `-1`.\n\nInput format: a single line containing `s`.\nOutput format: a single integer, the 0-based index of the first non-repeating character, or `-1`.",
+      constraints: "1 <= s.length <= 10^5\ns consists of only lowercase English letters.",
+      difficulty: "EASY",
+      order: 3,
+      topicId: strings.id,
+      starterCode: {
+        javascript:
+          "function firstUniqChar(s) {\n  // your code here\n}\n\nconst s = require('fs').readFileSync(0, 'utf8').split('\\n')[0]\nconsole.log(firstUniqChar(s))",
+        cpp:
+          "#include <bits/stdc++.h>\nusing namespace std;\n\nint firstUniqChar(string s) {\n    // your code here\n    return -1;\n}\n\nint main() {\n    string s;\n    getline(cin, s);\n    cout << firstUniqChar(s) << endl;\n    return 0;\n}",
+        java:
+          "import java.util.*;\nimport java.io.*;\n\npublic class Main {\n    static int firstUniqChar(String s) {\n        // your code here\n        return -1;\n    }\n\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        String s = br.readLine();\n        if (s == null) s = \"\";\n        System.out.println(firstUniqChar(s));\n    }\n}",
+        python:
+          "def first_uniq_char(s):\n    # your code here\n    pass\n\nimport sys\ns = sys.stdin.readline().rstrip('\\n')\nprint(first_uniq_char(s))",
+      },
+      testCases: {
+        create: [
+          { input: "leetcode", expected: "0", isSample: true, order: 1 },
+          { input: "loveleetcode", expected: "2", isSample: true, order: 2 },
+          { input: "aabb", expected: "-1", isSample: false, order: 3 },
+        ],
+      },
+    },
+  });
+
+  await prisma.problem.upsert({
+    where: { slug: "longest-common-prefix" },
+    update: {
+      title: "Longest Common Prefix",
+      slug: "longest-common-prefix",
+      statement:
+        "Write a function to find the longest common prefix string amongst an array of strings. If there is no common prefix, return an empty string.\n\nInput format: first line is `n`, the number of strings, followed by `n` lines each containing one string.\nOutput format: the longest common prefix (may be an empty line).",
+      constraints: "1 <= n <= 200\n0 <= strs[i].length <= 200\nstrs[i] consists of only lowercase English letters (if non-empty).",
+      difficulty: "MEDIUM",
+      order: 4,
+      topicId: strings.id,
+      starterCode: {
+        javascript:
+          "function longestCommonPrefix(strs) {\n  // your code here\n}\n\nconst lines = require('fs').readFileSync(0, 'utf8').split('\\n')\nconst n = parseInt(lines[0])\nconst strs = lines.slice(1, 1 + n)\nconsole.log(longestCommonPrefix(strs))",
+        cpp:
+          "#include <bits/stdc++.h>\nusing namespace std;\n\nstring longestCommonPrefix(vector<string>& strs) {\n    // your code here\n    return \"\";\n}\n\nint main() {\n    int n;\n    cin >> n;\n    cin.ignore();\n    vector<string> strs(n);\n    for (int i = 0; i < n; i++) getline(cin, strs[i]);\n    cout << longestCommonPrefix(strs) << endl;\n    return 0;\n}",
+        java:
+          "import java.util.*;\nimport java.io.*;\n\npublic class Main {\n    static String longestCommonPrefix(String[] strs) {\n        // your code here\n        return \"\";\n    }\n\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        int n = Integer.parseInt(br.readLine().trim());\n        String[] strs = new String[n];\n        for (int i = 0; i < n; i++) strs[i] = br.readLine();\n        System.out.println(longestCommonPrefix(strs));\n    }\n}",
+        python:
+          "def longest_common_prefix(strs):\n    # your code here\n    pass\n\nimport sys\nlines = sys.stdin.read().split('\\n')\nn = int(lines[0])\nstrs = lines[1:1+n]\nprint(longest_common_prefix(strs))",
+      },
+      testCases: {
+        deleteMany: {},
+        create: [
+          { input: "3\nflower\nflow\nflight", expected: "fl", isSample: true, order: 1 },
+          { input: "3\ndog\nracecar\ncar", expected: "", isSample: true, order: 2 },
+          { input: "2\ninterspecies\ninterstellar", expected: "inters", isSample: false, order: 3 },
+        ],
+      },
+    },
+    create: {
+      title: "Longest Common Prefix",
+      slug: "longest-common-prefix",
+      statement:
+        "Write a function to find the longest common prefix string amongst an array of strings. If there is no common prefix, return an empty string.\n\nInput format: first line is `n`, the number of strings, followed by `n` lines each containing one string.\nOutput format: the longest common prefix (may be an empty line).",
+      constraints: "1 <= n <= 200\n0 <= strs[i].length <= 200\nstrs[i] consists of only lowercase English letters (if non-empty).",
+      difficulty: "MEDIUM",
+      order: 4,
+      topicId: strings.id,
+      starterCode: {
+        javascript:
+          "function longestCommonPrefix(strs) {\n  // your code here\n}\n\nconst lines = require('fs').readFileSync(0, 'utf8').split('\\n')\nconst n = parseInt(lines[0])\nconst strs = lines.slice(1, 1 + n)\nconsole.log(longestCommonPrefix(strs))",
+        cpp:
+          "#include <bits/stdc++.h>\nusing namespace std;\n\nstring longestCommonPrefix(vector<string>& strs) {\n    // your code here\n    return \"\";\n}\n\nint main() {\n    int n;\n    cin >> n;\n    cin.ignore();\n    vector<string> strs(n);\n    for (int i = 0; i < n; i++) getline(cin, strs[i]);\n    cout << longestCommonPrefix(strs) << endl;\n    return 0;\n}",
+        java:
+          "import java.util.*;\nimport java.io.*;\n\npublic class Main {\n    static String longestCommonPrefix(String[] strs) {\n        // your code here\n        return \"\";\n    }\n\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        int n = Integer.parseInt(br.readLine().trim());\n        String[] strs = new String[n];\n        for (int i = 0; i < n; i++) strs[i] = br.readLine();\n        System.out.println(longestCommonPrefix(strs));\n    }\n}",
+        python:
+          "def longest_common_prefix(strs):\n    # your code here\n    pass\n\nimport sys\nlines = sys.stdin.read().split('\\n')\nn = int(lines[0])\nstrs = lines[1:1+n]\nprint(longest_common_prefix(strs))",
+      },
+      testCases: {
+        create: [
+          { input: "3\nflower\nflow\nflight", expected: "fl", isSample: true, order: 1 },
+          { input: "3\ndog\nracecar\ncar", expected: "", isSample: true, order: 2 },
+          { input: "2\ninterspecies\ninterstellar", expected: "inters", isSample: false, order: 3 },
+        ],
+      },
+    },
+  });
+
+  await prisma.problem.upsert({
+    where: { slug: "string-to-integer-atoi" },
+    update: {
+      title: "String to Integer (atoi)",
+      slug: "string-to-integer-atoi",
+      statement:
+        "Implement the `myAtoi(s)` function, which converts a string to a 32-bit signed integer.\n\nThe algorithm: skip leading whitespace, then an optional `+`/`-` sign, then read digits until a non-digit character. Ignore everything after the digits. If no digits are read, return 0. Clamp the result to the 32-bit signed integer range `[-2147483648, 2147483647]`.\n\nInput format: a single line containing `s`.\nOutput format: a single integer.",
+      constraints: "0 <= s.length <= 200\ns consists of English letters, digits, ' ', '+', '-', and '.'.",
+      difficulty: "MEDIUM",
+      order: 5,
+      topicId: strings.id,
+      starterCode: {
+        javascript:
+          "function myAtoi(s) {\n  // your code here\n}\n\nconst s = require('fs').readFileSync(0, 'utf8').split('\\n')[0]\nconsole.log(myAtoi(s))",
+        cpp:
+          "#include <bits/stdc++.h>\nusing namespace std;\n\nint myAtoi(string s) {\n    // your code here\n    return 0;\n}\n\nint main() {\n    string s;\n    getline(cin, s);\n    cout << myAtoi(s) << endl;\n    return 0;\n}",
+        java:
+          "import java.util.*;\nimport java.io.*;\n\npublic class Main {\n    static int myAtoi(String s) {\n        // your code here\n        return 0;\n    }\n\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        String s = br.readLine();\n        if (s == null) s = \"\";\n        System.out.println(myAtoi(s));\n    }\n}",
+        python:
+          "def my_atoi(s):\n    # your code here\n    pass\n\nimport sys\ns = sys.stdin.readline().rstrip('\\n')\nprint(my_atoi(s))",
+      },
+      testCases: {
+        deleteMany: {},
+        create: [
+          { input: "42", expected: "42", isSample: true, order: 1 },
+          { input: "   -42", expected: "-42", isSample: true, order: 2 },
+          { input: "4193 with words", expected: "4193", isSample: false, order: 3 },
+          { input: "words and 987", expected: "0", isSample: false, order: 4 },
+          { input: "-91283472332", expected: "-2147483648", isSample: false, order: 5 },
+        ],
+      },
+    },
+    create: {
+      title: "String to Integer (atoi)",
+      slug: "string-to-integer-atoi",
+      statement:
+        "Implement the `myAtoi(s)` function, which converts a string to a 32-bit signed integer.\n\nThe algorithm: skip leading whitespace, then an optional `+`/`-` sign, then read digits until a non-digit character. Ignore everything after the digits. If no digits are read, return 0. Clamp the result to the 32-bit signed integer range `[-2147483648, 2147483647]`.\n\nInput format: a single line containing `s`.\nOutput format: a single integer.",
+      constraints: "0 <= s.length <= 200\ns consists of English letters, digits, ' ', '+', '-', and '.'.",
+      difficulty: "MEDIUM",
+      order: 5,
+      topicId: strings.id,
+      starterCode: {
+        javascript:
+          "function myAtoi(s) {\n  // your code here\n}\n\nconst s = require('fs').readFileSync(0, 'utf8').split('\\n')[0]\nconsole.log(myAtoi(s))",
+        cpp:
+          "#include <bits/stdc++.h>\nusing namespace std;\n\nint myAtoi(string s) {\n    // your code here\n    return 0;\n}\n\nint main() {\n    string s;\n    getline(cin, s);\n    cout << myAtoi(s) << endl;\n    return 0;\n}",
+        java:
+          "import java.util.*;\nimport java.io.*;\n\npublic class Main {\n    static int myAtoi(String s) {\n        // your code here\n        return 0;\n    }\n\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        String s = br.readLine();\n        if (s == null) s = \"\";\n        System.out.println(myAtoi(s));\n    }\n}",
+        python:
+          "def my_atoi(s):\n    # your code here\n    pass\n\nimport sys\ns = sys.stdin.readline().rstrip('\\n')\nprint(my_atoi(s))",
+      },
+      testCases: {
+        create: [
+          { input: "42", expected: "42", isSample: true, order: 1 },
+          { input: "   -42", expected: "-42", isSample: true, order: 2 },
+          { input: "4193 with words", expected: "4193", isSample: false, order: 3 },
+          { input: "words and 987", expected: "0", isSample: false, order: 4 },
+          { input: "-91283472332", expected: "-2147483648", isSample: false, order: 5 },
+        ],
+      },
+    },
+  });
+
+  await prisma.problem.upsert({
+    where: { slug: "zigzag-conversion" },
+    update: {
+      title: "Zigzag Conversion",
+      slug: "zigzag-conversion",
+      statement:
+        "The string `s` is written in a zigzag pattern on `numRows` rows, then read row by row to produce the output.\n\nFor example `\"PAYPALISHIRING\"` with `numRows = 3` is arranged as:\n```\nP   A   H   N\nA P L S I I G\nY   I   R\n```\nand read row by row gives `\"PAHNAPLSIIGYIR\"`.\n\nInput format: two lines, `s` then `numRows`.\nOutput format: the zigzag-converted string.",
+      constraints: "1 <= s.length <= 1000\n1 <= numRows <= 1000",
+      difficulty: "MEDIUM",
+      order: 6,
+      topicId: strings.id,
+      starterCode: {
+        javascript:
+          "function convert(s, numRows) {\n  // your code here\n}\n\nconst lines = require('fs').readFileSync(0, 'utf8').split('\\n')\nconst s = lines[0]\nconst numRows = parseInt(lines[1])\nconsole.log(convert(s, numRows))",
+        cpp:
+          "#include <bits/stdc++.h>\nusing namespace std;\n\nstring convert(string s, int numRows) {\n    // your code here\n    return \"\";\n}\n\nint main() {\n    string s, line2;\n    getline(cin, s);\n    getline(cin, line2);\n    int numRows = stoi(line2);\n    cout << convert(s, numRows) << endl;\n    return 0;\n}",
+        java:
+          "import java.util.*;\nimport java.io.*;\n\npublic class Main {\n    static String convert(String s, int numRows) {\n        // your code here\n        return \"\";\n    }\n\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        String s = br.readLine();\n        int numRows = Integer.parseInt(br.readLine().trim());\n        System.out.println(convert(s, numRows));\n    }\n}",
+        python:
+          "def convert(s, num_rows):\n    # your code here\n    pass\n\nimport sys\nlines = sys.stdin.read().split('\\n')\ns = lines[0]\nnum_rows = int(lines[1])\nprint(convert(s, num_rows))",
+      },
+      testCases: {
+        deleteMany: {},
+        create: [
+          { input: "PAYPALISHIRING\n3", expected: "PAHNAPLSIIGYIR", isSample: true, order: 1 },
+          { input: "PAYPALISHIRING\n4", expected: "PINALSIGYAHRPI", isSample: true, order: 2 },
+          { input: "PAYPALISHIRING\n1", expected: "PAYPALISHIRING", isSample: false, order: 3 },
+        ],
+      },
+    },
+    create: {
+      title: "Zigzag Conversion",
+      slug: "zigzag-conversion",
+      statement:
+        "The string `s` is written in a zigzag pattern on `numRows` rows, then read row by row to produce the output.\n\nFor example `\"PAYPALISHIRING\"` with `numRows = 3` is arranged as:\n```\nP   A   H   N\nA P L S I I G\nY   I   R\n```\nand read row by row gives `\"PAHNAPLSIIGYIR\"`.\n\nInput format: two lines, `s` then `numRows`.\nOutput format: the zigzag-converted string.",
+      constraints: "1 <= s.length <= 1000\n1 <= numRows <= 1000",
+      difficulty: "MEDIUM",
+      order: 6,
+      topicId: strings.id,
+      starterCode: {
+        javascript:
+          "function convert(s, numRows) {\n  // your code here\n}\n\nconst lines = require('fs').readFileSync(0, 'utf8').split('\\n')\nconst s = lines[0]\nconst numRows = parseInt(lines[1])\nconsole.log(convert(s, numRows))",
+        cpp:
+          "#include <bits/stdc++.h>\nusing namespace std;\n\nstring convert(string s, int numRows) {\n    // your code here\n    return \"\";\n}\n\nint main() {\n    string s, line2;\n    getline(cin, s);\n    getline(cin, line2);\n    int numRows = stoi(line2);\n    cout << convert(s, numRows) << endl;\n    return 0;\n}",
+        java:
+          "import java.util.*;\nimport java.io.*;\n\npublic class Main {\n    static String convert(String s, int numRows) {\n        // your code here\n        return \"\";\n    }\n\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        String s = br.readLine();\n        int numRows = Integer.parseInt(br.readLine().trim());\n        System.out.println(convert(s, numRows));\n    }\n}",
+        python:
+          "def convert(s, num_rows):\n    # your code here\n    pass\n\nimport sys\nlines = sys.stdin.read().split('\\n')\ns = lines[0]\nnum_rows = int(lines[1])\nprint(convert(s, num_rows))",
+      },
+      testCases: {
+        create: [
+          { input: "PAYPALISHIRING\n3", expected: "PAHNAPLSIIGYIR", isSample: true, order: 1 },
+          { input: "PAYPALISHIRING\n4", expected: "PINALSIGYAHRPI", isSample: true, order: 2 },
+          { input: "PAYPALISHIRING\n1", expected: "PAYPALISHIRING", isSample: false, order: 3 },
+        ],
+      },
+    },
+  });
+
+  await prisma.problem.upsert({
+    where: { slug: "multiply-strings" },
+    update: {
+      title: "Multiply Strings",
+      slug: "multiply-strings",
+      statement:
+        "Given two non-negative integers `num1` and `num2` represented as strings, return the product of `num1` and `num2`, also represented as a string.\n\nInput format: two lines, `num1` then `num2`.\nOutput format: the product as a string, with no leading zeros (unless the result is `0`).",
+      constraints: "1 <= num1.length, num2.length <= 200\nnum1 and num2 consist of digits only and do not have leading zeros, except the number 0 itself.",
+      difficulty: "MEDIUM",
+      order: 7,
+      topicId: strings.id,
+      starterCode: {
+        javascript:
+          "function multiply(num1, num2) {\n  // your code here\n}\n\nconst lines = require('fs').readFileSync(0, 'utf8').split('\\n')\nconst num1 = lines[0]\nconst num2 = lines[1]\nconsole.log(multiply(num1, num2))",
+        cpp:
+          "#include <bits/stdc++.h>\nusing namespace std;\n\nstring multiply(string num1, string num2) {\n    // your code here\n    return \"0\";\n}\n\nint main() {\n    string num1, num2;\n    getline(cin, num1);\n    getline(cin, num2);\n    cout << multiply(num1, num2) << endl;\n    return 0;\n}",
+        java:
+          "import java.util.*;\nimport java.io.*;\n\npublic class Main {\n    static String multiply(String num1, String num2) {\n        // your code here\n        return \"0\";\n    }\n\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        String num1 = br.readLine();\n        String num2 = br.readLine();\n        System.out.println(multiply(num1, num2));\n    }\n}",
+        python:
+          "def multiply(num1, num2):\n    # your code here\n    pass\n\nimport sys\nlines = sys.stdin.read().split('\\n')\nnum1 = lines[0]\nnum2 = lines[1]\nprint(multiply(num1, num2))",
+      },
+      testCases: {
+        deleteMany: {},
+        create: [
+          { input: "2\n3", expected: "6", isSample: true, order: 1 },
+          { input: "123\n456", expected: "56088", isSample: true, order: 2 },
+          { input: "0\n12345", expected: "0", isSample: false, order: 3 },
+        ],
+      },
+    },
+    create: {
+      title: "Multiply Strings",
+      slug: "multiply-strings",
+      statement:
+        "Given two non-negative integers `num1` and `num2` represented as strings, return the product of `num1` and `num2`, also represented as a string.\n\nInput format: two lines, `num1` then `num2`.\nOutput format: the product as a string, with no leading zeros (unless the result is `0`).",
+      constraints: "1 <= num1.length, num2.length <= 200\nnum1 and num2 consist of digits only and do not have leading zeros, except the number 0 itself.",
+      difficulty: "MEDIUM",
+      order: 7,
+      topicId: strings.id,
+      starterCode: {
+        javascript:
+          "function multiply(num1, num2) {\n  // your code here\n}\n\nconst lines = require('fs').readFileSync(0, 'utf8').split('\\n')\nconst num1 = lines[0]\nconst num2 = lines[1]\nconsole.log(multiply(num1, num2))",
+        cpp:
+          "#include <bits/stdc++.h>\nusing namespace std;\n\nstring multiply(string num1, string num2) {\n    // your code here\n    return \"0\";\n}\n\nint main() {\n    string num1, num2;\n    getline(cin, num1);\n    getline(cin, num2);\n    cout << multiply(num1, num2) << endl;\n    return 0;\n}",
+        java:
+          "import java.util.*;\nimport java.io.*;\n\npublic class Main {\n    static String multiply(String num1, String num2) {\n        // your code here\n        return \"0\";\n    }\n\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        String num1 = br.readLine();\n        String num2 = br.readLine();\n        System.out.println(multiply(num1, num2));\n    }\n}",
+        python:
+          "def multiply(num1, num2):\n    # your code here\n    pass\n\nimport sys\nlines = sys.stdin.read().split('\\n')\nnum1 = lines[0]\nnum2 = lines[1]\nprint(multiply(num1, num2))",
+      },
+      testCases: {
+        create: [
+          { input: "2\n3", expected: "6", isSample: true, order: 1 },
+          { input: "123\n456", expected: "56088", isSample: true, order: 2 },
+          { input: "0\n12345", expected: "0", isSample: false, order: 3 },
+        ],
+      },
+    },
+  });
+
+  await prisma.problem.upsert({
+    where: { slug: "regular-expression-matching" },
+    update: {
+      title: "Regular Expression Matching",
+      slug: "regular-expression-matching",
+      statement:
+        "Given a string `s` and a pattern `p`, implement regular expression matching with support for `.` and `*` where:\n- `.` matches any single character.\n- `*` matches zero or more of the preceding element.\n\nThe matching should cover the **entire** input string (not partial).\n\nInput format: two lines, `s` then `p`.\nOutput format: `true` or `false`.",
+      constraints: "1 <= s.length <= 20\n1 <= p.length <= 20\ns consists of lowercase English letters.\np consists of lowercase English letters, '.', and '*'.\nIt is guaranteed every '*' is preceded by a valid character.",
+      difficulty: "HARD",
+      order: 8,
+      topicId: strings.id,
+      starterCode: {
+        javascript:
+          "function isMatch(s, p) {\n  // your code here\n}\n\nconst lines = require('fs').readFileSync(0, 'utf8').split('\\n')\nconst s = lines[0]\nconst p = lines[1]\nconsole.log(isMatch(s, p))",
+        cpp:
+          "#include <bits/stdc++.h>\nusing namespace std;\n\nbool isMatch(string s, string p) {\n    // your code here\n    return false;\n}\n\nint main() {\n    string s, p;\n    getline(cin, s);\n    getline(cin, p);\n    cout << (isMatch(s, p) ? \"true\" : \"false\") << endl;\n    return 0;\n}",
+        java:
+          "import java.util.*;\nimport java.io.*;\n\npublic class Main {\n    static boolean isMatch(String s, String p) {\n        // your code here\n        return false;\n    }\n\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        String s = br.readLine();\n        String p = br.readLine();\n        System.out.println(isMatch(s, p) ? \"true\" : \"false\");\n    }\n}",
+        python:
+          "def is_match(s, p):\n    # your code here\n    pass\n\nimport sys\nlines = sys.stdin.read().split('\\n')\ns = lines[0]\np = lines[1]\nprint(str(is_match(s, p)).lower())",
+      },
+      testCases: {
+        deleteMany: {},
+        create: [
+          { input: "aa\na", expected: "false", isSample: true, order: 1 },
+          { input: "aa\na*", expected: "true", isSample: true, order: 2 },
+          { input: "ab\n.*", expected: "true", isSample: false, order: 3 },
+          { input: "mississippi\nmis*is*p*.", expected: "false", isSample: false, order: 4 },
+          { input: "aab\nc*a*b", expected: "true", isSample: false, order: 5 },
+        ],
+      },
+    },
+    create: {
+      title: "Regular Expression Matching",
+      slug: "regular-expression-matching",
+      statement:
+        "Given a string `s` and a pattern `p`, implement regular expression matching with support for `.` and `*` where:\n- `.` matches any single character.\n- `*` matches zero or more of the preceding element.\n\nThe matching should cover the **entire** input string (not partial).\n\nInput format: two lines, `s` then `p`.\nOutput format: `true` or `false`.",
+      constraints: "1 <= s.length <= 20\n1 <= p.length <= 20\ns consists of lowercase English letters.\np consists of lowercase English letters, '.', and '*'.\nIt is guaranteed every '*' is preceded by a valid character.",
+      difficulty: "HARD",
+      order: 8,
+      topicId: strings.id,
+      starterCode: {
+        javascript:
+          "function isMatch(s, p) {\n  // your code here\n}\n\nconst lines = require('fs').readFileSync(0, 'utf8').split('\\n')\nconst s = lines[0]\nconst p = lines[1]\nconsole.log(isMatch(s, p))",
+        cpp:
+          "#include <bits/stdc++.h>\nusing namespace std;\n\nbool isMatch(string s, string p) {\n    // your code here\n    return false;\n}\n\nint main() {\n    string s, p;\n    getline(cin, s);\n    getline(cin, p);\n    cout << (isMatch(s, p) ? \"true\" : \"false\") << endl;\n    return 0;\n}",
+        java:
+          "import java.util.*;\nimport java.io.*;\n\npublic class Main {\n    static boolean isMatch(String s, String p) {\n        // your code here\n        return false;\n    }\n\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        String s = br.readLine();\n        String p = br.readLine();\n        System.out.println(isMatch(s, p) ? \"true\" : \"false\");\n    }\n}",
+        python:
+          "def is_match(s, p):\n    # your code here\n    pass\n\nimport sys\nlines = sys.stdin.read().split('\\n')\ns = lines[0]\np = lines[1]\nprint(str(is_match(s, p)).lower())",
+      },
+      testCases: {
+        create: [
+          { input: "aa\na", expected: "false", isSample: true, order: 1 },
+          { input: "aa\na*", expected: "true", isSample: true, order: 2 },
+          { input: "ab\n.*", expected: "true", isSample: false, order: 3 },
+          { input: "mississippi\nmis*is*p*.", expected: "false", isSample: false, order: 4 },
+          { input: "aab\nc*a*b", expected: "true", isSample: false, order: 5 },
+        ],
+      },
+    },
+  });
+
   console.log("Seeded all topics and problems");
 }
 

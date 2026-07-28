@@ -4,15 +4,19 @@ A full-stack, self-hosted **DSA judge and learning platform**. Users solve data-
 
 > Not a LeetCode clone. CodeForge pairs the judge with a guardrailed AI tutor, an adaptive difficulty engine, rated contests, anti-cheat, and audited moderation — each an intentional, self-contained subsystem.
 
+**🔗 Live app:** [codeforge-rust-xi.vercel.app](https://codeforge-rust-xi.vercel.app)
+
 ---
 
 ## Table of contents
 
 - [Feature overview](#feature-overview)
+- [Screenshots](#screenshots)
 - [Architecture](#architecture)
 - [Tech stack](#tech-stack)
 - [The judge pipeline](#the-judge-pipeline)
 - [Notable subsystems](#notable-subsystems)
+- [Deployment](#deployment)
 - [Getting started](#getting-started)
 - [Code execution (Piston)](#code-execution-piston)
 - [Environment variables](#environment-variables)
@@ -40,6 +44,22 @@ A full-stack, self-hosted **DSA judge and learning platform**. Users solve data-
 - **RBAC admin panel** with granular permissions: inspect users/submissions, ban/unban (permanent or timed, profile-locked), warn, revoke/restore submissions, review the anti-cheat queue, manage contests and admins.
 - **Append-only audit log** recording every privileged state change.
 - **Anti-cheat**: copy-poisoning of problem statements and per-problem canary tokens that flag suspected AI-pasted submissions for review (detect-and-discourage, never auto-punished).
+
+---
+
+## Screenshots
+
+**Landing page**
+![Landing page](public/screenshots/landing.png)
+
+**Solving a problem** — Monaco editor, live test cases, AI tutor panel
+![Problem editor](public/screenshots/editor.png)
+
+**Topics dashboard** — rank, badges, daily/weekly tasks, adaptive calibration, streak, solve calendar
+![Topics dashboard](public/screenshots/topics.png)
+
+**Contests** — weekly rated rounds with ICPC-style scoring
+![Contests](public/screenshots/contests.png)
 
 ---
 
@@ -131,6 +151,22 @@ The client (`OutputPanel`, `ContestArena`) enqueues then polls `GET /api/submiss
 - **`lib/anticheat.ts`** — HMAC-derived per-problem canary tokens + statement copy-poisoning.
 - **`lib/rate-limit.ts`** — in-process fixed-window limiter on auth/email endpoints (honestly scoped as per-instance; swappable for Redis).
 - **`lib/authz.ts` + `admin/_actions`** — permission checks enforced server-side on every admin action, each writing an `AuditLog` row.
+
+---
+
+## Deployment
+
+**Live:** [codeforge-rust-xi.vercel.app](https://codeforge-rust-xi.vercel.app), deployed straight from this repo's `main` branch.
+
+| Piece | Where |
+|---|---|
+| Next.js app | [Vercel](https://vercel.com) — serverless, deploys on every push |
+| Database | [Neon](https://neon.tech) Postgres, via the Prisma 7 Neon serverless adapter |
+| Auth | NextAuth v5 — credentials + GitHub + Google OAuth, both wired to the live domain |
+| AI tutor | Google Gemini via the Vercel AI SDK |
+| Code execution | Self-hosted Piston (see [Code execution](#code-execution-piston)) — deliberately **not** deployed on Vercel, since it's a long-running Docker sandbox, not a request-scoped function |
+
+That last row isn't an oversight — it's the actual shape of the architecture (see [The judge pipeline](#the-judge-pipeline) and its **Deploy note**). The web app and the sandboxed execution engine are two different kinds of workload with two different hosting needs, and the async, queue-based judge pipeline exists specifically so they can scale and fail independently of each other. Piston + the judge worker are meant to run on any always-on host next to the same `DATABASE_URL` — a small VM, Railway, Fly, Render — pointed at via `PISTON_URL`/`PISTON_AUTH_TOKEN`; `deploy/piston-nginx.conf` is the reverse-proxy config for gating that instance behind a bearer token once it's public.
 
 ---
 
@@ -255,13 +291,17 @@ src/
 ├── app/
 │   ├── api/            # route handlers: execute (judge), ai (tutor), auth, signup, ...
 │   ├── admin/          # RBAC admin panel + audited server actions (_actions)
-│   ├── contests/       # contest list, live arena, history
-│   ├── problems/       # problem solving pages
-│   ├── topics/         # topic browse
-│   ├── profile/        # profile + gamification
-│   └── editor/         # standalone editor
-├── components/         # editor, AI panel, contest arena, admin controls, gamification, landing
+│   ├── contests/       # contest list, live arena, history (each with a loading.tsx skeleton)
+│   ├── problems/       # problem solving pages (resizable panels, loading.tsx skeleton)
+│   ├── topics/         # topic browse (loading.tsx skeleton)
+│   ├── profile/        # profile + gamification (loading.tsx skeleton)
+│   └── editor/         # standalone editor/scratchpad
+├── components/
+│   ├── ui/             # generic primitives (Skeleton, Button)
+│   └── ...             # editor, AI panel, contest arena, admin controls, gamification, landing
+├── hooks/              # useDragResize (resizable panel drag logic)
 ├── lib/                # judge, scoring, skill, gamification, ban, authz, anticheat, rate-limit, email
+│   └── *.test.ts       # vitest unit tests for the DB-free pure functions (contest-score, adaptive, gamification)
 ├── stores/             # Zustand stores (editor, AI)
 └── types/              # shared + next-auth type augmentation
 prisma/
@@ -269,6 +309,8 @@ prisma/
 ├── migrations/
 └── seed.ts
 scripts/                # admin + Piston operational scripts
+deploy/                 # nginx config for gating a public Piston instance behind a bearer token
+vitest.config.ts        # test runner config for src/lib/*.test.ts
 ```
 
 ---

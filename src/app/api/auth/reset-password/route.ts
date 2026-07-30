@@ -13,7 +13,7 @@ const schema = z.object({
 export async function POST(request: Request) {
   // Throttle by IP: 10 attempts per 15 minutes. Tokens are 256-bit and
   // single-use, but rate-limiting removes any online guessing margin.
-  const rl = rateLimit(`reset:${ipFromRequest(request)}`, 10, 15 * 60_000)
+  const rl = await rateLimit(`reset:${ipFromRequest(request)}`, 10, 15 * 60_000)
   if (!rl.ok) return tooManyRequests(rl)
 
   let body: unknown

@@ -13,7 +13,7 @@ const schema = z.object({
 // whether the account exists / is already verified, to avoid leaking which
 // emails are registered (account enumeration), mirroring forgot-password.
 export async function POST(request: Request) {
-  const rl = rateLimit(`resend-verify:${ipFromRequest(request)}`, 5, 15 * 60_000)
+  const rl = await rateLimit(`resend-verify:${ipFromRequest(request)}`, 5, 15 * 60_000)
   if (!rl.ok) return tooManyRequests(rl)
 
   let body: unknown

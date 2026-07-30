@@ -26,7 +26,7 @@ const schema = z.object({
 //
 // It does NOT sign anyone in — it only returns a reason string.
 export async function POST(request: Request) {
-  const rl = rateLimit(`login-status:${ipFromRequest(request)}`, 10, 15 * 60_000)
+  const rl = await rateLimit(`login-status:${ipFromRequest(request)}`, 10, 15 * 60_000)
   if (!rl.ok) return tooManyRequests(rl)
 
   let body: unknown

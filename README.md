@@ -86,7 +86,7 @@ A full-stack, self-hosted **DSA judge and learning platform**. Users solve data-
                 ▼                          ▼                 ▼
         Piston sandbox            PostgreSQL (Neon)      External APIs
         (Docker, self-hosted)     via Prisma 7           Gemini · SMTP · OAuth
-        runs untrusted code
+        runs untrusted code                              Upstash Redis (rate limits)
 ```
 
 The judge, tutor, and moderation flows are deliberately isolated. Business logic in `src/lib` is written as **pure functions over already-fetched data** (scoring, skill, rank, ban-state) so it can be reasoned about — and later unit-tested — without a database.
@@ -106,6 +106,7 @@ The judge, tutor, and moderation flows are deliberately isolated. Business logic
 | Code execution | Self-hosted [Piston](https://github.com/engineer-man/piston) in Docker |
 | AI | Google Gemini via the Vercel AI SDK (streaming) |
 | Email | Nodemailer (Gmail SMTP) |
+| Rate limiting | [Upstash](https://upstash.com) Redis (`@upstash/ratelimit`) — falls back to an in-memory limiter locally |
 
 ---
 
@@ -149,7 +150,7 @@ The client (`OutputPanel`, `ContestArena`) enqueues then polls `GET /api/submiss
 - **`lib/gamification.ts`** — rank tiers, XP, streaks, solve calendar, and daily/weekly tasks, all *derived* from submissions + progress so no extra schema is needed.
 - **`lib/ban.ts`** — single source of truth for "is this ban currently active", supporting permanent and timed, reversible bans.
 - **`lib/anticheat.ts`** — HMAC-derived per-problem canary tokens + statement copy-poisoning.
-- **`lib/rate-limit.ts`** — in-process fixed-window limiter on auth/email endpoints (honestly scoped as per-instance; swappable for Redis).
+- **`lib/rate-limit.ts`** — fixed-window limiter on auth/email endpoints. Backed by Upstash Redis (one atomic script, correct across every serverless instance) when configured; falls back to an in-process `Map` otherwise, so local dev needs no external account.
 - **`lib/authz.ts` + `admin/_actions`** — permission checks enforced server-side on every admin action, each writing an `AuditLog` row.
 
 ---
@@ -164,6 +165,7 @@ The client (`OutputPanel`, `ContestArena`) enqueues then polls `GET /api/submiss
 | Database | [Neon](https://neon.tech) Postgres, via the Prisma 7 Neon serverless adapter |
 | Auth | NextAuth v5 — credentials + GitHub + Google OAuth, both wired to the live domain |
 | AI tutor | Google Gemini via the Vercel AI SDK |
+| Rate limiting | [Upstash](https://upstash.com) Redis — real cross-instance limit, verified against the live deployment |
 | Code execution | Self-hosted Piston (see [Code execution](#code-execution-piston)) — deliberately **not** deployed on Vercel, since it's a long-running Docker sandbox, not a request-scoped function |
 
 That last row isn't an oversight — it's the actual shape of the architecture (see [The judge pipeline](#the-judge-pipeline) and its **Deploy note**). The web app and the sandboxed execution engine are two different kinds of workload with two different hosting needs, and the async, queue-based judge pipeline exists specifically so they can scale and fail independently of each other. Piston + the judge worker are meant to run on any always-on host next to the same `DATABASE_URL` — a small VM, Railway, Fly, Render — pointed at via `PISTON_URL`/`PISTON_AUTH_TOKEN`; `deploy/piston-nginx.conf` is the reverse-proxy config for gating that instance behind a bearer token once it's public.
@@ -267,6 +269,7 @@ Copy `.env.example` to `.env` and fill in:
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OAuth (optional) |
 | `ADMIN_EMAILS` | Comma-separated emails granted full admin by `admin:bootstrap` |
 | `SMTP_USER` / `SMTP_PASS` / `EMAIL_FROM` | Gmail SMTP for password-reset email (in dev, unset → reset links are logged to the console) |
+| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | [Upstash](https://upstash.com) Redis (free tier) backing the rate limiter (`src/lib/rate-limit.ts`) with a real cross-instance limit; unset → falls back to an in-memory, per-instance limiter |
 
 ---
 

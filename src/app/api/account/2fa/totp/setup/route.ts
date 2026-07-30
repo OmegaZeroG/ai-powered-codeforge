@@ -15,7 +15,7 @@ import { generateTotpSecret, buildOtpAuthUrl } from "@/lib/totp"
 //
 // Guards: signed in, password account, verified email.
 export async function POST(request: Request) {
-  const rl = rateLimit(`2fa-totp-setup:${ipFromRequest(request)}`, 15, 15 * 60_000)
+  const rl = await rateLimit(`2fa-totp-setup:${ipFromRequest(request)}`, 15, 15 * 60_000)
   if (!rl.ok) return tooManyRequests(rl)
 
   const session = await auth()

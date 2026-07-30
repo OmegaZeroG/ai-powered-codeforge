@@ -12,7 +12,7 @@ import { reconcile2fa } from "@/lib/two-factor-state"
 const schema = z.object({ method: z.enum(["email", "totp"]) })
 
 export async function POST(request: Request) {
-  const rl = rateLimit(`2fa-primary:${ipFromRequest(request)}`, 30, 15 * 60_000)
+  const rl = await rateLimit(`2fa-primary:${ipFromRequest(request)}`, 30, 15 * 60_000)
   if (!rl.ok) return tooManyRequests(rl)
 
   const session = await auth()

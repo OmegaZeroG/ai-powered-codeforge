@@ -11,7 +11,7 @@ const schema = z.object({
 export async function POST(request: Request) {
   // Throttle by IP: 5 reset requests per 15 minutes. Blunts email-bombing a
   // victim's inbox and slows enumeration probing.
-  const rl = rateLimit(`forgot:${ipFromRequest(request)}`, 5, 15 * 60_000)
+  const rl = await rateLimit(`forgot:${ipFromRequest(request)}`, 5, 15 * 60_000)
   if (!rl.ok) return tooManyRequests(rl)
 
   let body: unknown

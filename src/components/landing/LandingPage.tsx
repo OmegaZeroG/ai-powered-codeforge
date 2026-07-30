@@ -718,7 +718,7 @@ function Features() {
 }
 
 const FREE_FEATURES = [
-  "Access to 500+ problems",
+  "A growing, topic-structured problem library",
   "Adaptive difficulty & analytics",
   "AI hints & complexity reasoning",
   "Rated weekly contests",

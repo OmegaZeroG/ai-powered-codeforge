@@ -3043,6 +3043,317 @@ async function main() {
     },
   });
 
+  const bitManipulation = await prisma.topic.upsert({
+    where: { slug: "bit-manipulation" },
+    update: {
+      name: "Bit Manipulation",
+      slug: "bit-manipulation",
+      description: "Problems solved with bitwise tricks — XOR, shifts, and bit counting.",
+      order: 14,
+    },
+    create: {
+      name: "Bit Manipulation",
+      slug: "bit-manipulation",
+      description: "Problems solved with bitwise tricks — XOR, shifts, and bit counting.",
+      order: 14,
+    },
+  });
+
+  await prisma.problem.upsert({
+    where: { slug: "number-of-1-bits" },
+    update: {
+      title: "Number of 1 Bits",
+      slug: "number-of-1-bits",
+      statement:
+        "Given an integer `n`, return the number of set bits (`1`s) in its 32-bit unsigned binary representation. This is also known as the Hamming weight.\n\nInput format: a single line containing `n`.\nOutput format: a single integer, the count of set bits.",
+      constraints: "0 <= n <= 2^32 - 1",
+      difficulty: "EASY",
+      order: 1,
+      topicId: bitManipulation.id,
+      starterCode: {
+        javascript:
+          "function hammingWeight(n) {\n  // your code here\n}\n\nconst n = Number(require('fs').readFileSync(0, 'utf8').trim())\nconsole.log(hammingWeight(n))",
+        cpp:
+          "#include <bits/stdc++.h>\nusing namespace std;\n\nint hammingWeight(long long n) {\n    // your code here\n    return 0;\n}\n\nint main() {\n    long long n;\n    cin >> n;\n    cout << hammingWeight(n) << endl;\n    return 0;\n}",
+        java:
+          "import java.util.*;\n\npublic class Main {\n    static int hammingWeight(long n) {\n        // your code here\n        return 0;\n    }\n\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        long n = Long.parseLong(sc.nextLine().trim());\n        System.out.println(hammingWeight(n));\n    }\n}",
+        python:
+          "def hamming_weight(n):\n    # your code here\n    pass\n\nn = int(input())\nprint(hamming_weight(n))",
+      },
+      testCases: {
+        deleteMany: {},
+        create: [
+          { input: "11", expected: "3", isSample: true, order: 1 },
+          { input: "128", expected: "1", isSample: true, order: 2 },
+          { input: "4294967293", expected: "31", isSample: false, order: 3 },
+        ],
+      },
+    },
+    create: {
+      title: "Number of 1 Bits",
+      slug: "number-of-1-bits",
+      statement:
+        "Given an integer `n`, return the number of set bits (`1`s) in its 32-bit unsigned binary representation. This is also known as the Hamming weight.\n\nInput format: a single line containing `n`.\nOutput format: a single integer, the count of set bits.",
+      constraints: "0 <= n <= 2^32 - 1",
+      difficulty: "EASY",
+      order: 1,
+      topicId: bitManipulation.id,
+      starterCode: {
+        javascript:
+          "function hammingWeight(n) {\n  // your code here\n}\n\nconst n = Number(require('fs').readFileSync(0, 'utf8').trim())\nconsole.log(hammingWeight(n))",
+        cpp:
+          "#include <bits/stdc++.h>\nusing namespace std;\n\nint hammingWeight(long long n) {\n    // your code here\n    return 0;\n}\n\nint main() {\n    long long n;\n    cin >> n;\n    cout << hammingWeight(n) << endl;\n    return 0;\n}",
+        java:
+          "import java.util.*;\n\npublic class Main {\n    static int hammingWeight(long n) {\n        // your code here\n        return 0;\n    }\n\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        long n = Long.parseLong(sc.nextLine().trim());\n        System.out.println(hammingWeight(n));\n    }\n}",
+        python:
+          "def hamming_weight(n):\n    # your code here\n    pass\n\nn = int(input())\nprint(hamming_weight(n))",
+      },
+      testCases: {
+        create: [
+          { input: "11", expected: "3", isSample: true, order: 1 },
+          { input: "128", expected: "1", isSample: true, order: 2 },
+          { input: "4294967293", expected: "31", isSample: false, order: 3 },
+        ],
+      },
+    },
+  });
+
+  await prisma.problem.upsert({
+    where: { slug: "single-number" },
+    update: {
+      title: "Single Number",
+      slug: "single-number",
+      statement:
+        "Given a non-empty array of integers `nums`, every element appears twice except for one. Find that single one, in O(n) time and O(1) extra space.\n\nInput format: a single line with `nums` as space-separated integers.\nOutput format: a single integer, the element that appears only once.",
+      constraints: "1 <= nums.length <= 3 * 10^4\n-3 * 10^4 <= nums[i] <= 3 * 10^4\nEvery element appears exactly twice except for one, which appears exactly once.",
+      difficulty: "EASY",
+      order: 2,
+      topicId: bitManipulation.id,
+      starterCode: {
+        javascript:
+          "function singleNumber(nums) {\n  // your code here\n}\n\nconst nums = require('fs').readFileSync(0, 'utf8').trim().split(' ').map(Number)\nconsole.log(singleNumber(nums))",
+        cpp:
+          "#include <bits/stdc++.h>\nusing namespace std;\n\nint singleNumber(vector<int>& nums) {\n    // your code here\n    return 0;\n}\n\nint main() {\n    string line;\n    getline(cin, line);\n    stringstream ss(line);\n    vector<int> nums;\n    int x;\n    while (ss >> x) nums.push_back(x);\n    cout << singleNumber(nums) << endl;\n    return 0;\n}",
+        java:
+          "import java.util.*;\nimport java.io.*;\n\npublic class Main {\n    static int singleNumber(int[] nums) {\n        // your code here\n        return 0;\n    }\n\n    static int[] parseInts(String line) {\n        if (line == null) return new int[]{};\n        line = line.trim();\n        if (line.isEmpty()) return new int[]{};\n        String[] p = line.split(\" +\");\n        int[] a = new int[p.length];\n        for (int i = 0; i < p.length; i++) a[i] = Integer.parseInt(p[i]);\n        return a;\n    }\n\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        int[] nums = parseInts(br.readLine());\n        System.out.println(singleNumber(nums));\n    }\n}",
+        python:
+          "def single_number(nums):\n    # your code here\n    pass\n\nimport sys\nnums = list(map(int, sys.stdin.readline().split()))\nprint(single_number(nums))",
+      },
+      testCases: {
+        deleteMany: {},
+        create: [
+          { input: "2 2 1", expected: "1", isSample: true, order: 1 },
+          { input: "4 1 2 1 2", expected: "4", isSample: true, order: 2 },
+          { input: "1", expected: "1", isSample: false, order: 3 },
+        ],
+      },
+    },
+    create: {
+      title: "Single Number",
+      slug: "single-number",
+      statement:
+        "Given a non-empty array of integers `nums`, every element appears twice except for one. Find that single one, in O(n) time and O(1) extra space.\n\nInput format: a single line with `nums` as space-separated integers.\nOutput format: a single integer, the element that appears only once.",
+      constraints: "1 <= nums.length <= 3 * 10^4\n-3 * 10^4 <= nums[i] <= 3 * 10^4\nEvery element appears exactly twice except for one, which appears exactly once.",
+      difficulty: "EASY",
+      order: 2,
+      topicId: bitManipulation.id,
+      starterCode: {
+        javascript:
+          "function singleNumber(nums) {\n  // your code here\n}\n\nconst nums = require('fs').readFileSync(0, 'utf8').trim().split(' ').map(Number)\nconsole.log(singleNumber(nums))",
+        cpp:
+          "#include <bits/stdc++.h>\nusing namespace std;\n\nint singleNumber(vector<int>& nums) {\n    // your code here\n    return 0;\n}\n\nint main() {\n    string line;\n    getline(cin, line);\n    stringstream ss(line);\n    vector<int> nums;\n    int x;\n    while (ss >> x) nums.push_back(x);\n    cout << singleNumber(nums) << endl;\n    return 0;\n}",
+        java:
+          "import java.util.*;\nimport java.io.*;\n\npublic class Main {\n    static int singleNumber(int[] nums) {\n        // your code here\n        return 0;\n    }\n\n    static int[] parseInts(String line) {\n        if (line == null) return new int[]{};\n        line = line.trim();\n        if (line.isEmpty()) return new int[]{};\n        String[] p = line.split(\" +\");\n        int[] a = new int[p.length];\n        for (int i = 0; i < p.length; i++) a[i] = Integer.parseInt(p[i]);\n        return a;\n    }\n\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        int[] nums = parseInts(br.readLine());\n        System.out.println(singleNumber(nums));\n    }\n}",
+        python:
+          "def single_number(nums):\n    # your code here\n    pass\n\nimport sys\nnums = list(map(int, sys.stdin.readline().split()))\nprint(single_number(nums))",
+      },
+      testCases: {
+        create: [
+          { input: "2 2 1", expected: "1", isSample: true, order: 1 },
+          { input: "4 1 2 1 2", expected: "4", isSample: true, order: 2 },
+          { input: "1", expected: "1", isSample: false, order: 3 },
+        ],
+      },
+    },
+  });
+
+  await prisma.problem.upsert({
+    where: { slug: "reverse-bits" },
+    update: {
+      title: "Reverse Bits",
+      slug: "reverse-bits",
+      statement:
+        "Given a 32-bit unsigned integer `n`, reverse its bits and return the resulting 32-bit unsigned integer.\n\nInput format: a single line containing `n`.\nOutput format: a single integer, the bit-reversed value.",
+      constraints: "0 <= n <= 2^32 - 1",
+      difficulty: "EASY",
+      order: 3,
+      topicId: bitManipulation.id,
+      starterCode: {
+        javascript:
+          "function reverseBits(n) {\n  // your code here\n}\n\nconst n = Number(require('fs').readFileSync(0, 'utf8').trim())\nconsole.log(reverseBits(n))",
+        cpp:
+          "#include <bits/stdc++.h>\nusing namespace std;\n\nlong long reverseBits(long long n) {\n    // your code here\n    return 0;\n}\n\nint main() {\n    long long n;\n    cin >> n;\n    cout << reverseBits(n) << endl;\n    return 0;\n}",
+        java:
+          "import java.util.*;\n\npublic class Main {\n    static long reverseBits(long n) {\n        // your code here\n        return 0;\n    }\n\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        long n = Long.parseLong(sc.nextLine().trim());\n        System.out.println(reverseBits(n));\n    }\n}",
+        python:
+          "def reverse_bits(n):\n    # your code here\n    pass\n\nn = int(input())\nprint(reverse_bits(n))",
+      },
+      testCases: {
+        deleteMany: {},
+        create: [
+          { input: "43261596", expected: "964176192", isSample: true, order: 1 },
+          { input: "1", expected: "2147483648", isSample: true, order: 2 },
+          { input: "4294967293", expected: "3221225471", isSample: false, order: 3 },
+        ],
+      },
+    },
+    create: {
+      title: "Reverse Bits",
+      slug: "reverse-bits",
+      statement:
+        "Given a 32-bit unsigned integer `n`, reverse its bits and return the resulting 32-bit unsigned integer.\n\nInput format: a single line containing `n`.\nOutput format: a single integer, the bit-reversed value.",
+      constraints: "0 <= n <= 2^32 - 1",
+      difficulty: "EASY",
+      order: 3,
+      topicId: bitManipulation.id,
+      starterCode: {
+        javascript:
+          "function reverseBits(n) {\n  // your code here\n}\n\nconst n = Number(require('fs').readFileSync(0, 'utf8').trim())\nconsole.log(reverseBits(n))",
+        cpp:
+          "#include <bits/stdc++.h>\nusing namespace std;\n\nlong long reverseBits(long long n) {\n    // your code here\n    return 0;\n}\n\nint main() {\n    long long n;\n    cin >> n;\n    cout << reverseBits(n) << endl;\n    return 0;\n}",
+        java:
+          "import java.util.*;\n\npublic class Main {\n    static long reverseBits(long n) {\n        // your code here\n        return 0;\n    }\n\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        long n = Long.parseLong(sc.nextLine().trim());\n        System.out.println(reverseBits(n));\n    }\n}",
+        python:
+          "def reverse_bits(n):\n    # your code here\n    pass\n\nn = int(input())\nprint(reverse_bits(n))",
+      },
+      testCases: {
+        create: [
+          { input: "43261596", expected: "964176192", isSample: true, order: 1 },
+          { input: "1", expected: "2147483648", isSample: true, order: 2 },
+          { input: "4294967293", expected: "3221225471", isSample: false, order: 3 },
+        ],
+      },
+    },
+  });
+
+  await prisma.problem.upsert({
+    where: { slug: "counting-bits" },
+    update: {
+      title: "Counting Bits",
+      slug: "counting-bits",
+      statement:
+        "Given an integer `n`, return an array `ans` of length `n + 1` such that for each `i` (`0 <= i <= n`), `ans[i]` is the number of `1`s in the binary representation of `i`.\n\nInput format: a single line containing `n`.\nOutput format: `n + 1` space-separated integers, `ans[0]` through `ans[n]`.",
+      constraints: "0 <= n <= 10^5",
+      difficulty: "MEDIUM",
+      order: 4,
+      topicId: bitManipulation.id,
+      starterCode: {
+        javascript:
+          "function countBits(n) {\n  // your code here\n}\n\nconst n = Number(require('fs').readFileSync(0, 'utf8').trim())\nconsole.log(countBits(n).join(' '))",
+        cpp:
+          "#include <bits/stdc++.h>\nusing namespace std;\n\nvector<int> countBits(int n) {\n    // your code here\n    return {};\n}\n\nint main() {\n    int n;\n    cin >> n;\n    vector<int> res = countBits(n);\n    for (size_t i = 0; i < res.size(); i++) cout << res[i] << (i + 1 < res.size() ? \" \" : \"\");\n    cout << endl;\n    return 0;\n}",
+        java:
+          "import java.util.*;\n\npublic class Main {\n    static int[] countBits(int n) {\n        // your code here\n        return new int[]{};\n    }\n\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = Integer.parseInt(sc.nextLine().trim());\n        int[] res = countBits(n);\n        StringBuilder sb = new StringBuilder();\n        for (int i = 0; i < res.length; i++) {\n            if (i > 0) sb.append(\" \");\n            sb.append(res[i]);\n        }\n        System.out.println(sb.toString());\n    }\n}",
+        python:
+          "def count_bits(n):\n    # your code here\n    pass\n\nn = int(input())\nprint(' '.join(map(str, count_bits(n))))",
+      },
+      testCases: {
+        deleteMany: {},
+        create: [
+          { input: "2", expected: "0 1 1", isSample: true, order: 1 },
+          { input: "5", expected: "0 1 1 2 1 2", isSample: true, order: 2 },
+          { input: "0", expected: "0", isSample: false, order: 3 },
+        ],
+      },
+    },
+    create: {
+      title: "Counting Bits",
+      slug: "counting-bits",
+      statement:
+        "Given an integer `n`, return an array `ans` of length `n + 1` such that for each `i` (`0 <= i <= n`), `ans[i]` is the number of `1`s in the binary representation of `i`.\n\nInput format: a single line containing `n`.\nOutput format: `n + 1` space-separated integers, `ans[0]` through `ans[n]`.",
+      constraints: "0 <= n <= 10^5",
+      difficulty: "MEDIUM",
+      order: 4,
+      topicId: bitManipulation.id,
+      starterCode: {
+        javascript:
+          "function countBits(n) {\n  // your code here\n}\n\nconst n = Number(require('fs').readFileSync(0, 'utf8').trim())\nconsole.log(countBits(n).join(' '))",
+        cpp:
+          "#include <bits/stdc++.h>\nusing namespace std;\n\nvector<int> countBits(int n) {\n    // your code here\n    return {};\n}\n\nint main() {\n    int n;\n    cin >> n;\n    vector<int> res = countBits(n);\n    for (size_t i = 0; i < res.size(); i++) cout << res[i] << (i + 1 < res.size() ? \" \" : \"\");\n    cout << endl;\n    return 0;\n}",
+        java:
+          "import java.util.*;\n\npublic class Main {\n    static int[] countBits(int n) {\n        // your code here\n        return new int[]{};\n    }\n\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = Integer.parseInt(sc.nextLine().trim());\n        int[] res = countBits(n);\n        StringBuilder sb = new StringBuilder();\n        for (int i = 0; i < res.length; i++) {\n            if (i > 0) sb.append(\" \");\n            sb.append(res[i]);\n        }\n        System.out.println(sb.toString());\n    }\n}",
+        python:
+          "def count_bits(n):\n    # your code here\n    pass\n\nn = int(input())\nprint(' '.join(map(str, count_bits(n))))",
+      },
+      testCases: {
+        create: [
+          { input: "2", expected: "0 1 1", isSample: true, order: 1 },
+          { input: "5", expected: "0 1 1 2 1 2", isSample: true, order: 2 },
+          { input: "0", expected: "0", isSample: false, order: 3 },
+        ],
+      },
+    },
+  });
+
+  await prisma.problem.upsert({
+    where: { slug: "missing-number" },
+    update: {
+      title: "Missing Number",
+      slug: "missing-number",
+      statement:
+        "Given an array `nums` containing `n` distinct numbers taken from the range `[0, n]`, return the one number in that range that is missing from the array.\n\nInput format: a single line with `nums` as space-separated integers.\nOutput format: a single integer, the missing number.",
+      constraints: "1 <= n <= 10^4\nnums.length == n\n0 <= nums[i] <= n\nAll values in nums are distinct.",
+      difficulty: "MEDIUM",
+      order: 5,
+      topicId: bitManipulation.id,
+      starterCode: {
+        javascript:
+          "function missingNumber(nums) {\n  // your code here\n}\n\nconst nums = require('fs').readFileSync(0, 'utf8').trim().split(' ').map(Number)\nconsole.log(missingNumber(nums))",
+        cpp:
+          "#include <bits/stdc++.h>\nusing namespace std;\n\nint missingNumber(vector<int>& nums) {\n    // your code here\n    return 0;\n}\n\nint main() {\n    string line;\n    getline(cin, line);\n    stringstream ss(line);\n    vector<int> nums;\n    int x;\n    while (ss >> x) nums.push_back(x);\n    cout << missingNumber(nums) << endl;\n    return 0;\n}",
+        java:
+          "import java.util.*;\nimport java.io.*;\n\npublic class Main {\n    static int missingNumber(int[] nums) {\n        // your code here\n        return 0;\n    }\n\n    static int[] parseInts(String line) {\n        if (line == null) return new int[]{};\n        line = line.trim();\n        if (line.isEmpty()) return new int[]{};\n        String[] p = line.split(\" +\");\n        int[] a = new int[p.length];\n        for (int i = 0; i < p.length; i++) a[i] = Integer.parseInt(p[i]);\n        return a;\n    }\n\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        int[] nums = parseInts(br.readLine());\n        System.out.println(missingNumber(nums));\n    }\n}",
+        python:
+          "def missing_number(nums):\n    # your code here\n    pass\n\nimport sys\nnums = list(map(int, sys.stdin.readline().split()))\nprint(missing_number(nums))",
+      },
+      testCases: {
+        deleteMany: {},
+        create: [
+          { input: "3 0 1", expected: "2", isSample: true, order: 1 },
+          { input: "0 1", expected: "2", isSample: true, order: 2 },
+          { input: "9 6 4 2 3 5 7 0 1", expected: "8", isSample: false, order: 3 },
+        ],
+      },
+    },
+    create: {
+      title: "Missing Number",
+      slug: "missing-number",
+      statement:
+        "Given an array `nums` containing `n` distinct numbers taken from the range `[0, n]`, return the one number in that range that is missing from the array.\n\nInput format: a single line with `nums` as space-separated integers.\nOutput format: a single integer, the missing number.",
+      constraints: "1 <= n <= 10^4\nnums.length == n\n0 <= nums[i] <= n\nAll values in nums are distinct.",
+      difficulty: "MEDIUM",
+      order: 5,
+      topicId: bitManipulation.id,
+      starterCode: {
+        javascript:
+          "function missingNumber(nums) {\n  // your code here\n}\n\nconst nums = require('fs').readFileSync(0, 'utf8').trim().split(' ').map(Number)\nconsole.log(missingNumber(nums))",
+        cpp:
+          "#include <bits/stdc++.h>\nusing namespace std;\n\nint missingNumber(vector<int>& nums) {\n    // your code here\n    return 0;\n}\n\nint main() {\n    string line;\n    getline(cin, line);\n    stringstream ss(line);\n    vector<int> nums;\n    int x;\n    while (ss >> x) nums.push_back(x);\n    cout << missingNumber(nums) << endl;\n    return 0;\n}",
+        java:
+          "import java.util.*;\nimport java.io.*;\n\npublic class Main {\n    static int missingNumber(int[] nums) {\n        // your code here\n        return 0;\n    }\n\n    static int[] parseInts(String line) {\n        if (line == null) return new int[]{};\n        line = line.trim();\n        if (line.isEmpty()) return new int[]{};\n        String[] p = line.split(\" +\");\n        int[] a = new int[p.length];\n        for (int i = 0; i < p.length; i++) a[i] = Integer.parseInt(p[i]);\n        return a;\n    }\n\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        int[] nums = parseInts(br.readLine());\n        System.out.println(missingNumber(nums));\n    }\n}",
+        python:
+          "def missing_number(nums):\n    # your code here\n    pass\n\nimport sys\nnums = list(map(int, sys.stdin.readline().split()))\nprint(missing_number(nums))",
+      },
+      testCases: {
+        create: [
+          { input: "3 0 1", expected: "2", isSample: true, order: 1 },
+          { input: "0 1", expected: "2", isSample: true, order: 2 },
+          { input: "9 6 4 2 3 5 7 0 1", expected: "8", isSample: false, order: 3 },
+        ],
+      },
+    },
+  });
+
   console.log("Seeded all topics and problems");
 }
 

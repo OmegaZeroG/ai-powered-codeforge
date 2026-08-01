@@ -89,7 +89,7 @@ export function LandingPage({
           isLoggedIn={isLoggedIn}
           onGetStarted={() => openAuth("signup")}
         />
-        <TrustedBy />
+        
         <MidPitch />
         <Features />
         <FreeForever isLoggedIn={isLoggedIn} onGetStarted={() => openAuth("signup")} />
@@ -571,35 +571,35 @@ function MockTabs() {
   )
 }
 
-function TrustedBy() {
-  const brands = ["Kernel", "Boltline", "Nimbus", "Modul", "Axon", "Struct"]
-  return (
-    <section className="relative z-10 mx-auto max-w-6xl px-6 py-20">
-      <motion.p
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        className="text-center font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground"
-      >
-        Trusted by teams building the next generation of tools
-      </motion.p>
-      <div className="mt-8 flex flex-wrap items-center justify-center gap-x-14 gap-y-6">
-        {brands.map((b, i) => (
-          <motion.div
-            key={b}
-            initial={{ opacity: 0, y: 10 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: i * 0.06 }}
-            className="font-display text-2xl text-muted-foreground/70"
-          >
-            {b}
-          </motion.div>
-        ))}
-      </div>
-    </section>
-  )
-}
+// function TrustedBy() {
+//   const brands = ["Kernel", "Boltline", "Nimbus", "Modul", "Axon", "Struct"]
+//   return (
+//     <section className="relative z-10 mx-auto max-w-6xl px-6 py-20">
+//       <motion.p
+//         initial={{ opacity: 0 }}
+//         whileInView={{ opacity: 1 }}
+//         viewport={{ once: true }}
+//         className="text-center font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground"
+//       >
+//         Trusted by teams building the next generation of tools
+//       </motion.p>
+//       <div className="mt-8 flex flex-wrap items-center justify-center gap-x-14 gap-y-6">
+//         {brands.map((b, i) => (
+//           <motion.div
+//             key={b}
+//             initial={{ opacity: 0, y: 10 }}
+//             whileInView={{ opacity: 1, y: 0 }}
+//             viewport={{ once: true }}
+//             transition={{ delay: i * 0.06 }}
+//             className="font-display text-2xl text-muted-foreground/70"
+//           >
+//             {b}
+//           </motion.div>
+//         ))}
+//       </div>
+//     </section>
+//   )
+// }
 
 function MidPitch() {
   return (

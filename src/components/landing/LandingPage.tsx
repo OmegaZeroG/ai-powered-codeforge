@@ -24,6 +24,8 @@ import {
   Trophy,
   LogOut,
   Mail,
+  Menu,
+  X,
 } from "lucide-react"
 import { Newsletter } from "./Newsletter"
 import { AuthModal } from "./AuthModal"
@@ -142,22 +144,40 @@ function Nav({
   isLoggedIn: boolean
   onAuth: (mode: "login" | "signup") => void
 }) {
+  const [menuOpen, setMenuOpen] = useState(false)
+  const navItems = isLoggedIn
+    ? [
+        { label: "Problems", href: "/topics" },
+        { label: "Editor", href: "/editor" },
+        { label: "Contests", href: "/contests" },
+        { label: "Profile", href: "/profile" },
+      ]
+    : [
+        { label: "Features", href: "#features" },
+        { label: "Free", href: "#free" },
+        { label: "FAQ", href: "#faq" },
+      ]
+
   return (
     <motion.header
       initial={{ y: -12, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
-      className="sticky top-4 z-50 mx-auto mt-4 flex max-w-6xl items-center justify-between rounded-full border border-border/70 bg-card/60 px-4 py-2.5 backdrop-blur"
+      className="sticky top-4 z-50 mx-auto mt-4 max-w-6xl px-4 sm:px-0"
     >
-      <Logo />
-      <nav className="hidden items-center gap-1 md:flex">
-        {isLoggedIn
-          ? [
-              { label: "Problems", href: "/topics" },
-              { label: "Editor", href: "/editor" },
-              { label: "Contests", href: "/contests" },
-              { label: "Profile", href: "/profile" },
-            ].map((l) => (
+      <div className="flex items-center justify-between rounded-full border border-border/70 bg-card/60 px-4 py-2.5 backdrop-blur">
+        <Logo />
+        <nav className="hidden items-center gap-1 md:flex">
+          {navItems.map((l) =>
+            l.href.startsWith("#") ? (
+              <a
+                key={l.label}
+                href={l.href}
+                className="rounded-full px-3.5 py-1.5 text-[13px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                {l.label}
+              </a>
+            ) : (
               <Link
                 key={l.label}
                 href={l.href}
@@ -165,51 +185,114 @@ function Nav({
               >
                 {l.label}
               </Link>
-            ))
-          : ["Features", "Free", "FAQ"].map((l) => (
-              <a
-                key={l}
-                href={`#${l.toLowerCase()}`}
-                className="rounded-full px-3.5 py-1.5 text-[13px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            )
+          )}
+        </nav>
+        <div className="flex items-center gap-2">
+          {isLoggedIn ? (
+            <>
+              <Link
+                href="/topics"
+                className="hidden items-center gap-1.5 rounded-full bg-primary px-4 py-1.5 text-[13px] font-medium text-primary-foreground transition-all hover:brightness-110 sm:inline-flex"
               >
-                {l}
-              </a>
-            ))}
-      </nav>
-      <div className="flex items-center gap-2">
-        {isLoggedIn ? (
-          <>
-            <Link
-              href="/topics"
-              className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-1.5 text-[13px] font-medium text-primary-foreground transition-all hover:brightness-110"
-            >
-              Continue
-            </Link>
-            <button
-              onClick={() => signOut({ callbackUrl: "/" })}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border px-3.5 py-1.5 text-[13px] text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
-            >
-              <LogOut className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Log out</span>
-            </button>
-          </>
-        ) : (
-          <>
-            <button
-              onClick={() => onAuth("login")}
-              className="hidden rounded-full px-3.5 py-1.5 text-[13px] text-muted-foreground hover:text-foreground sm:block"
-            >
-              Log in
-            </button>
-            <button
-              onClick={() => onAuth("signup")}
-              className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-1.5 text-[13px] font-medium text-primary-foreground transition-all hover:brightness-110"
-            >
-              Sign up
-            </button>
-          </>
-        )}
+                Continue
+              </Link>
+              <button
+                onClick={() => signOut({ callbackUrl: "/" })}
+                className="hidden items-center gap-1.5 rounded-full border border-border px-3.5 py-1.5 text-[13px] text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground sm:inline-flex"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Log out</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => onAuth("login")}
+                className="hidden rounded-full px-3.5 py-1.5 text-[13px] text-muted-foreground hover:text-foreground sm:block"
+              >
+                Log in
+              </button>
+              <button
+                onClick={() => onAuth("signup")}
+                className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-1.5 text-[13px] font-medium text-primary-foreground transition-all hover:brightness-110"
+              >
+                Sign up
+              </button>
+            </>
+          )}
+          <button
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+            className="grid h-8 w-8 place-items-center rounded-full border border-border text-foreground transition-colors hover:border-primary/40 md:hidden"
+          >
+            {menuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+          </button>
+        </div>
       </div>
+
+      <AnimatePresence>
+        {menuOpen ? (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.15 }}
+            className="mt-2 flex flex-col gap-1 rounded-3xl border border-border/70 bg-card/95 p-3 backdrop-blur md:hidden"
+          >
+            {navItems.map((l) =>
+              l.href.startsWith("#") ? (
+                <a
+                  key={l.label}
+                  href={l.href}
+                  onClick={() => setMenuOpen(false)}
+                  className="rounded-2xl px-4 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  {l.label}
+                </a>
+              ) : (
+                <Link
+                  key={l.label}
+                  href={l.href}
+                  onClick={() => setMenuOpen(false)}
+                  className="rounded-2xl px-4 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  {l.label}
+                </Link>
+              )
+            )}
+            {isLoggedIn ? (
+              <>
+                <Link
+                  href="/topics"
+                  onClick={() => setMenuOpen(false)}
+                  className="mt-1 rounded-2xl bg-primary px-4 py-2.5 text-center text-sm font-medium text-primary-foreground sm:hidden"
+                >
+                  Continue
+                </Link>
+                <button
+                  onClick={() => signOut({ callbackUrl: "/" })}
+                  className="flex items-center gap-1.5 rounded-2xl px-4 py-2.5 text-left text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:hidden"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                  Log out
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => {
+                  setMenuOpen(false)
+                  onAuth("login")
+                }}
+                className="rounded-2xl px-4 py-2.5 text-left text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:hidden"
+              >
+                Log in
+              </button>
+            )}
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </motion.header>
   )
 }
@@ -329,8 +412,8 @@ function IdeMockup() {
         className="absolute -inset-6 -z-10 rounded-3xl bg-gradient-to-b from-primary/25 via-primary/5 to-transparent blur-2xl"
       />
       <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-2xl glow-orange">
-        <div className="flex items-center justify-between border-b border-border bg-background/50 px-4 py-2.5">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between gap-2 overflow-x-auto border-b border-border bg-background/50 px-3 py-2.5 sm:px-4">
+          <div className="flex shrink-0 items-center gap-3">
             <div className="flex items-center gap-1.5">
               <span className="h-2.5 w-2.5 rounded-full bg-destructive/70" />
               <span className="h-2.5 w-2.5 rounded-full bg-primary/70" />
@@ -340,17 +423,18 @@ function IdeMockup() {
               JavaScript <ChevronDown className="h-3 w-3" />
             </div>
           </div>
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <div className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
             <IconBtn icon={RotateCcw}>Reset</IconBtn>
-            <span className="inline-flex items-center gap-1 rounded-md border border-primary/40 bg-primary/10 px-2.5 py-1 text-primary">
-              <Sparkles className="h-3 w-3" /> AI Assistant
+            <span className="inline-flex items-center gap-1 rounded-md border border-primary/40 bg-primary/10 px-2 py-1 text-primary sm:px-2.5">
+              <Sparkles className="h-3 w-3" />
+              <span className="hidden sm:inline">AI Assistant</span>
             </span>
             <IconBtn icon={Save}>Save</IconBtn>
             <IconBtn icon={Share2}>Share</IconBtn>
           </div>
         </div>
 
-        <div className="grid grid-cols-[180px_minmax(0,1fr)_180px] gap-0 text-xs md:grid-cols-[210px_minmax(0,1fr)_210px]">
+        <div className="grid grid-cols-1 gap-0 text-xs md:grid-cols-[210px_minmax(0,1fr)_210px]">
           <div className="hidden border-r border-border p-4 md:block">
             <div className="text-[10px] text-muted-foreground">← Arrays</div>
             <div className="mt-3 flex items-center gap-2">

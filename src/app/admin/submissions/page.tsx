@@ -111,7 +111,8 @@ export default async function AdminSubmissionsPage({
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-border/60">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[640px] text-sm sm:min-w-0">
           <thead>
             <tr className="border-b border-border/60 bg-background/40 text-left text-xs text-muted-foreground">
               <th className="px-4 py-2.5 font-medium">Problem</th>
@@ -197,6 +198,7 @@ export default async function AdminSubmissionsPage({
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {totalPages > 1 ? (

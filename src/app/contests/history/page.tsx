@@ -86,7 +86,8 @@ export default async function ContestHistoryPage() {
 
               {/* History table */}
               <div className="overflow-hidden rounded-2xl border border-border/70 bg-card/60 backdrop-blur-sm">
-                <table className="w-full text-sm">
+                <div className="overflow-x-auto">
+                <table className="w-full min-w-[480px] text-sm sm:min-w-0">
                   <thead>
                     <tr className="text-left text-[11px] uppercase tracking-wide text-muted-foreground">
                       <th className="px-5 py-3 font-medium">Contest</th>
@@ -153,6 +154,7 @@ export default async function ContestHistoryPage() {
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
 
               <p className="mt-4 text-right font-mono text-[11px] text-muted-foreground">

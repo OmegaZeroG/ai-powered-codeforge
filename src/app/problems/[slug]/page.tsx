@@ -51,7 +51,7 @@ export default async function ProblemPage({
       <ProblemLoader problem={problemDetail} />
       <Toolbar />
 
-      <div className="flex-1 flex overflow-hidden min-h-0">
+      <div className="flex-1 flex flex-col overflow-hidden min-h-0 md:flex-row">
         {/* Statement panel (drag handle on its right edge) */}
         <ProblemStatementPanel>
           <Link

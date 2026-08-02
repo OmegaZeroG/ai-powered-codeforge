@@ -319,7 +319,7 @@ export function OutputPanel() {
                   </span>
                 </div>
                 {(test.isSample || !test.passed) && (
-                  <div className="grid grid-cols-3 gap-3 text-xs">
+                  <div className="grid grid-cols-1 gap-3 text-xs sm:grid-cols-3">
                     <div>
                       <p className="text-fg-faint mb-1">Input</p>
                       <pre className="text-fg whitespace-pre-wrap">

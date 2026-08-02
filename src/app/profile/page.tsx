@@ -130,15 +130,16 @@ export default async function ProfilePage() {
 
         <main className="mx-auto max-w-7xl px-6 py-10">
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_minmax(0,1fr)_300px]">
-            {/* LEFT rail */}
-            <aside className="space-y-6 lg:sticky lg:top-24 lg:self-start">
+            {/* LEFT rail — ordered after the profile content on mobile so
+                identity/stats aren't buried below widgets. */}
+            <aside className="order-2 space-y-6 lg:order-none lg:sticky lg:top-24 lg:self-start">
               <RankCard rank={game.rank} />
               <BadgesCard badges={game.badges} />
               <TasksCard daily={game.tasks.daily} weekly={game.tasks.weekly} />
             </aside>
 
             {/* CENTER */}
-            <div className="space-y-6">
+            <div className="order-1 space-y-6 lg:order-none">
               {banned ? (
                 <BanNotice
                   reason={user?.bannedReason ?? null}
@@ -299,7 +300,7 @@ export default async function ProfilePage() {
             </div>
 
             {/* RIGHT rail */}
-            <aside className="space-y-6 lg:sticky lg:top-24 lg:self-start">
+            <aside className="order-3 space-y-6 lg:order-none lg:sticky lg:top-24 lg:self-start">
               <SolveCalendar solvedDays={game.solvedDays} />
               <StreakCard streak={game.streak} bestStreak={game.bestStreak} />
               <ContestStatsCard stats={contestStats} />

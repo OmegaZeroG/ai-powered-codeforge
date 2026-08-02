@@ -11,7 +11,7 @@ export default function EditorPage() {
       <Toolbar />
 
       {/* Main area */}
-      <div className="flex-1 flex overflow-hidden min-h-0">
+      <div className="flex-1 flex flex-col overflow-hidden min-h-0 md:flex-row">
         <EditorOutputSplit />
 
         {/* AI assistant panel (mounts when toggled open, drag handle on its

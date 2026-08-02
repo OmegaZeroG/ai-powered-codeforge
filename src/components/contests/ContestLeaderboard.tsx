@@ -42,6 +42,7 @@ export function ContestLeaderboard({
         ) : null}
       </div>
 
+      <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
           <tr className="text-left text-[11px] uppercase tracking-wide text-muted-foreground">
@@ -125,6 +126,7 @@ export function ContestLeaderboard({
           })}
         </tbody>
       </table>
+      </div>
     </div>
   )
 }

@@ -263,23 +263,23 @@ export function ContestArena({
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-ink">
       {/* Header bar: title, progress, live timer */}
-      <header className="flex h-14 shrink-0 items-center justify-between border-b border-edge px-4">
-        <div className="flex items-center gap-3">
+      <header className="flex h-14 shrink-0 items-center justify-between gap-2 overflow-x-auto border-b border-edge px-3 sm:px-4">
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           <Link
             href="/contests"
             className="text-sm text-fg-muted transition-colors hover:text-white"
           >
-            ← Contests
+            ← <span className="hidden sm:inline">Contests</span>
           </Link>
           <div className="flex items-center gap-2">
-            <Trophy size={16} className="text-brand" />
-            <span className="text-sm font-semibold text-white">
+            <Trophy size={16} className="shrink-0 text-brand" />
+            <span className="max-w-[120px] truncate text-sm font-semibold text-white sm:max-w-none">
               {contest.title}
             </span>
           </div>
         </div>
-        <div className="flex items-center gap-4">
-          <span className="text-xs text-fg-muted">
+        <div className="flex shrink-0 items-center gap-2 sm:gap-4">
+          <span className="hidden text-xs text-fg-muted sm:inline">
             Solved{" "}
             <span className="font-mono text-ac">{solvedCount}</span>
             <span className="text-fg-faint"> / {problems.length}</span>
@@ -287,10 +287,10 @@ export function ContestArena({
           {!ended && (
             <button
               onClick={() => setConfirmingEnd(true)}
-              className="inline-flex items-center gap-1.5 rounded-md border border-edge px-3 py-1.5 text-xs text-fg-muted transition-colors hover:border-wa/60 hover:text-wa"
+              className="inline-flex items-center gap-1.5 rounded-md border border-edge px-2.5 py-1.5 text-xs text-fg-muted transition-colors hover:border-wa/60 hover:text-wa sm:px-3"
             >
               <Flag size={13} />
-              End contest
+              <span className="hidden sm:inline">End contest</span>
             </button>
           )}
           <div className="text-right">
@@ -310,7 +310,7 @@ export function ContestArena({
       </header>
 
       {/* Problem tabs A / B / C */}
-      <div className="flex h-10 shrink-0 items-center gap-1 border-b border-edge px-4">
+      <div className="flex h-10 shrink-0 items-center gap-1 overflow-x-auto border-b border-edge px-3 sm:px-4">
         {problems.map((p, i) => {
           const isActive = i === activeIdx
           const isSolved = solved.has(p.id)
@@ -318,7 +318,7 @@ export function ContestArena({
             <button
               key={p.id}
               onClick={() => setActiveIdx(i)}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1 text-sm transition-colors ${
+              className={`flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1 text-sm transition-colors ${
                 isActive
                   ? "bg-edge/60 text-white"
                   : "text-fg-muted hover:text-white"
@@ -327,7 +327,7 @@ export function ContestArena({
               <span className="font-mono text-xs text-fg-faint">
                 {String.fromCharCode(65 + i)}
               </span>
-              <span className="max-w-[160px] truncate">{p.title}</span>
+              <span className="max-w-[90px] truncate sm:max-w-[160px]">{p.title}</span>
               {isSolved && (
                 <CheckCircle2 size={13} className="shrink-0 text-ac" />
               )}
@@ -336,9 +336,9 @@ export function ContestArena({
         })}
       </div>
 
-      <div className="flex min-h-0 flex-1 overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden md:flex-row">
         {/* Statement panel */}
-        <div className="w-[420px] shrink-0 overflow-auto border-r border-edge px-6 py-6">
+        <div className="max-h-[35vh] w-full shrink-0 overflow-auto border-b border-edge px-4 py-5 md:max-h-none md:w-[420px] md:border-b-0 md:border-r md:px-6 md:py-6">
           <div className="mb-4 flex items-center gap-3">
             <h1 className="text-lg font-semibold text-white">{active.title}</h1>
             <DifficultyTag difficulty={active.difficulty} />
@@ -402,11 +402,11 @@ export function ContestArena({
               </select>
               <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wide text-fg-faint">
                 <ClipboardX size={11} />
-                Paste disabled
+                <span className="hidden sm:inline">Paste disabled</span>
               </span>
               {pasteBlocked && (
                 <span className="rounded bg-wa/15 px-2 py-0.5 text-[11px] text-wa">
-                  Pasting is disabled during the contest
+                  Pasting is disabled
                 </span>
               )}
             </div>
@@ -442,7 +442,7 @@ export function ContestArena({
           </div>
 
           {/* Output / submit */}
-          <div className="flex h-56 flex-col border-t border-edge bg-ink-deep">
+          <div className="flex h-40 flex-col border-t border-edge bg-ink-deep sm:h-56">
             <div className="flex h-10 items-center justify-between px-4">
               <span className="text-xs font-medium uppercase tracking-[0.15em] text-fg-muted">
                 Output
@@ -510,7 +510,7 @@ export function ContestArena({
                         </span>
                       </div>
                       {(test.isSample || !test.passed) && (
-                        <div className="grid grid-cols-3 gap-3 text-xs">
+                        <div className="grid grid-cols-1 gap-3 text-xs sm:grid-cols-3">
                           <div>
                             <p className="mb-1 text-fg-faint">Input</p>
                             <pre className="whitespace-pre-wrap text-fg">

@@ -102,9 +102,9 @@ export function Toolbar() {
   }
 
   return (
-    <div className="h-14 bg-ink border-b border-edge flex items-center justify-between px-4">
+    <div className="h-14 bg-ink border-b border-edge flex items-center justify-between gap-2 overflow-x-auto px-2 sm:px-4">
       {/* Left — Logo */}
-      <div className="flex items-center gap-3">
+      <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
         <Link
           href="/"
           className="flex items-center gap-2 rounded-md transition-opacity hover:opacity-80"
@@ -113,7 +113,7 @@ export function Toolbar() {
           <span className="w-6 h-6 rounded-md bg-brand text-white grid place-items-center font-bold text-[10px] tracking-tight select-none">
             CF
           </span>
-          <span className="text-white font-bold text-base tracking-tight">
+          <span className="hidden text-white font-bold text-base tracking-tight sm:inline">
             CodeForge
           </span>
         </Link>
@@ -122,18 +122,18 @@ export function Toolbar() {
         {/* Problems — back to the topic/problem browser */}
         <Link
           href="/topics"
-          className="flex items-center gap-1.5 text-sm px-3.5 py-1.5 rounded-lg bg-raised text-fg-dim hover:text-white hover:bg-raised-bright border border-edge transition-colors"
+          className="flex items-center gap-1.5 text-sm px-2.5 py-1.5 rounded-lg bg-raised text-fg-dim hover:text-white hover:bg-raised-bright border border-edge transition-colors sm:px-3.5"
           title="Browse all problems"
         >
           <List size={14} />
-          Problems
+          <span className="hidden sm:inline">Problems</span>
         </Link>
 
         {/* Language selector */}
         <select
           value={language}
           onChange={(e) => setLanguage(e.target.value as Language)}
-          className="bg-raised text-fg text-sm border border-edge rounded-lg px-3.5 py-1.5 focus:outline-none focus:border-brand cursor-pointer"
+          className="bg-raised text-fg text-sm border border-edge rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-brand cursor-pointer sm:px-3.5"
         >
           {LANGUAGES.map((lang) => (
             <option key={lang.value} value={lang.value}>
@@ -150,15 +150,15 @@ export function Toolbar() {
                 resetCode()
                 setConfirmingReset(false)
               }}
-              className="flex items-center gap-1.5 text-sm px-3.5 py-1.5 rounded-lg text-white bg-wa/20 hover:bg-wa/30 border border-wa/40 transition-colors"
+              className="flex items-center gap-1.5 text-sm px-2.5 py-1.5 rounded-lg text-white bg-wa/20 hover:bg-wa/30 border border-wa/40 transition-colors sm:px-3.5"
               title="Confirm reset to starter code"
             >
               <RotateCcw size={14} />
-              Confirm reset
+              <span className="hidden sm:inline">Confirm reset</span>
             </button>
             <button
               onClick={() => setConfirmingReset(false)}
-              className="text-sm px-3.5 py-1.5 rounded-lg text-fg-muted hover:text-white hover:bg-raised border border-edge transition-colors"
+              className="text-sm px-2.5 py-1.5 rounded-lg text-fg-muted hover:text-white hover:bg-raised border border-edge transition-colors sm:px-3.5"
               title="Cancel"
             >
               Cancel
@@ -167,29 +167,29 @@ export function Toolbar() {
         ) : (
           <button
             onClick={() => setConfirmingReset(true)}
-            className="flex items-center gap-1.5 text-sm px-3.5 py-1.5 rounded-lg bg-raised text-fg-dim hover:text-white hover:bg-raised-bright border border-edge transition-colors"
+            className="flex items-center gap-1.5 text-sm px-2.5 py-1.5 rounded-lg bg-raised text-fg-dim hover:text-white hover:bg-raised-bright border border-edge transition-colors sm:px-3.5"
             title="Reset to starter code"
           >
             <RotateCcw size={14} />
-            Reset
+            <span className="hidden sm:inline">Reset</span>
           </button>
         )}
       </div>
 
       {/* Right — Actions */}
-      <div className="flex items-center gap-2">
+      <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
         {/* AI toggle pill — sparkles + label + on/off switch */}
         <button
           onClick={togglePanel}
           aria-pressed={isPanelOpen}
-          className={`flex items-center gap-2 text-sm px-3.5 py-1.5 rounded-lg border transition-colors ${
+          className={`flex items-center gap-2 text-sm px-2.5 py-1.5 rounded-lg border transition-colors sm:px-3.5 ${
             isPanelOpen
               ? "border-brand/60 bg-brand/10 text-white"
               : "border-edge bg-raised text-fg-dim hover:text-white hover:bg-raised-bright"
           }`}
         >
           <Sparkles size={14} className={isPanelOpen ? "text-brand" : ""} />
-          AI
+          <span className="hidden sm:inline">AI</span>
           <span
             aria-hidden
             className={`relative inline-block w-7 h-4 rounded-full transition-colors ${
@@ -209,7 +209,7 @@ export function Toolbar() {
         <div className="relative flex items-center" ref={menuRef}>
           <button
             onClick={handleSave}
-            className={`flex items-center gap-2 text-sm pl-3.5 pr-3 py-1.5 rounded-l-lg border transition-colors ${
+            className={`flex items-center gap-2 text-sm pl-2.5 pr-2 py-1.5 rounded-l-lg border transition-colors sm:pl-3.5 sm:pr-3 ${
               saved
                 ? "border-ac/50 bg-ac/10 text-ac"
                 : "bg-raised text-fg-dim hover:text-white hover:bg-raised-bright border-edge"
@@ -217,9 +217,9 @@ export function Toolbar() {
             title="Save draft to this browser now"
           >
             {saved ? <Check size={14} /> : <Save size={14} />}
-            {saved ? "Saved" : "Save"}
+            <span className="hidden sm:inline">{saved ? "Saved" : "Save"}</span>
             {!saved && (
-              <span className="text-[10px] font-medium uppercase tracking-wide text-fg-muted">
+              <span className="hidden text-[10px] font-medium uppercase tracking-wide text-fg-muted md:inline">
                 {MODE_BADGE[saveMode]}
               </span>
             )}
@@ -291,7 +291,7 @@ export function Toolbar() {
 
         <button
           onClick={handleShare}
-          className={`flex items-center gap-2 text-sm px-3.5 py-1.5 rounded-lg border transition-colors ${
+          className={`flex items-center gap-2 text-sm px-2.5 py-1.5 rounded-lg border transition-colors sm:px-3.5 ${
             copied
               ? "border-ac/50 bg-ac/10 text-ac"
               : "bg-raised text-fg-dim hover:text-white hover:bg-raised-bright border-edge"
@@ -299,14 +299,14 @@ export function Toolbar() {
           title="Copy code to clipboard"
         >
           {copied ? <Check size={14} /> : <Share2 size={14} />}
-          {copied ? "Copied" : "Share"}
+          <span className="hidden sm:inline">{copied ? "Copied" : "Share"}</span>
         </button>
 
         {/* Session info + logout */}
         {status === "authenticated" && session?.user && (
-          <div className="flex items-center gap-2 pl-3 ml-1 border-l border-edge">
+          <div className="flex items-center gap-2 pl-2 ml-1 border-l border-edge sm:pl-3">
             <NotificationBell />
-            <span className="text-fg-muted text-sm max-w-[140px] truncate">
+            <span className="hidden text-fg-muted text-sm max-w-[140px] truncate md:inline">
               {session.user.name || session.user.email}
             </span>
             <button

@@ -86,67 +86,69 @@ export function ContestResultView({
           <div className="border-b border-border/70 px-5 py-3 text-sm font-medium text-foreground">
             Your problem breakdown
           </div>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-[11px] uppercase tracking-wide text-muted-foreground">
-                <th className="px-5 py-2 font-medium">Problem</th>
-                <th className="px-2 py-2 text-center font-medium">Status</th>
-                <th className="px-2 py-2 text-center font-medium">Solved at</th>
-                <th className="px-2 py-2 text-center font-medium">Wrong tries</th>
-                <th className="px-5 py-2 text-right font-medium">Penalty</th>
-              </tr>
-            </thead>
-            <tbody>
-              {board.problemsMeta.map((pm) => {
-                const ps = me.perProblem.find(
-                  (p) => p.problemId === pm.problemId,
-                )
-                const solved = ps?.solved ?? false
-                const attempted = solved || (ps?.wrongBeforeSolve ?? 0) > 0
-                return (
-                  <tr key={pm.problemId} className="border-t border-border/50">
-                    <td className="px-5 py-2.5">
-                      <span className="font-mono text-muted-foreground">
-                        {pm.label}
-                      </span>{" "}
-                      <span className="text-foreground/90">{pm.title}</span>
-                    </td>
-                    <td className="px-2 py-2.5 text-center">
-                      {solved ? (
-                        <span className="text-emerald-400">Solved</span>
-                      ) : attempted ? (
-                        <span className="text-red-400/80">Unsolved</span>
-                      ) : (
-                        <span className="text-muted-foreground/50">—</span>
-                      )}
-                    </td>
-                    <td className="px-2 py-2.5 text-center font-mono text-foreground">
-                      {solved && ps?.solveMinutes != null
-                        ? formatPenaltyTime(ps.solveMinutes)
-                        : "—"}
-                    </td>
-                    <td className="px-2 py-2.5 text-center font-mono text-muted-foreground">
-                      {ps?.wrongBeforeSolve ? ps.wrongBeforeSolve : "—"}
-                    </td>
-                    <td className="px-5 py-2.5 text-right font-mono">
-                      {solved && ps ? (
-                        <span className="text-foreground">
-                          {formatPenaltyTime(ps.penaltyMinutes)}
-                          {ps.wrongBeforeSolve > 0 ? (
-                            <span className="ml-1 text-[10px] text-red-400/70">
-                              ({ps.solveMinutes}′ +{ps.wrongBeforeSolve}×{PENALTY_MINUTES})
-                            </span>
-                          ) : null}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground/50">—</span>
-                      )}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[560px] text-sm sm:min-w-0">
+              <thead>
+                <tr className="text-left text-[11px] uppercase tracking-wide text-muted-foreground">
+                  <th className="px-5 py-2 font-medium">Problem</th>
+                  <th className="px-2 py-2 text-center font-medium">Status</th>
+                  <th className="px-2 py-2 text-center font-medium">Solved at</th>
+                  <th className="px-2 py-2 text-center font-medium">Wrong tries</th>
+                  <th className="px-5 py-2 text-right font-medium">Penalty</th>
+                </tr>
+              </thead>
+              <tbody>
+                {board.problemsMeta.map((pm) => {
+                  const ps = me.perProblem.find(
+                    (p) => p.problemId === pm.problemId,
+                  )
+                  const solved = ps?.solved ?? false
+                  const attempted = solved || (ps?.wrongBeforeSolve ?? 0) > 0
+                  return (
+                    <tr key={pm.problemId} className="border-t border-border/50">
+                      <td className="px-5 py-2.5">
+                        <span className="font-mono text-muted-foreground">
+                          {pm.label}
+                        </span>{" "}
+                        <span className="text-foreground/90">{pm.title}</span>
+                      </td>
+                      <td className="px-2 py-2.5 text-center">
+                        {solved ? (
+                          <span className="text-emerald-400">Solved</span>
+                        ) : attempted ? (
+                          <span className="text-red-400/80">Unsolved</span>
+                        ) : (
+                          <span className="text-muted-foreground/50">—</span>
+                        )}
+                      </td>
+                      <td className="px-2 py-2.5 text-center font-mono text-foreground">
+                        {solved && ps?.solveMinutes != null
+                          ? formatPenaltyTime(ps.solveMinutes)
+                          : "—"}
+                      </td>
+                      <td className="px-2 py-2.5 text-center font-mono text-muted-foreground">
+                        {ps?.wrongBeforeSolve ? ps.wrongBeforeSolve : "—"}
+                      </td>
+                      <td className="px-5 py-2.5 text-right font-mono">
+                        {solved && ps ? (
+                          <span className="text-foreground">
+                            {formatPenaltyTime(ps.penaltyMinutes)}
+                            {ps.wrongBeforeSolve > 0 ? (
+                              <span className="ml-1 text-[10px] text-red-400/70">
+                                ({ps.solveMinutes}′ +{ps.wrongBeforeSolve}×{PENALTY_MINUTES})
+                              </span>
+                            ) : null}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground/50">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : null}
 

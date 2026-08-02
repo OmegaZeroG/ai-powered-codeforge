@@ -1,9 +1,11 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useSession, signOut } from "next-auth/react"
-import { Terminal, LogOut, ShieldCheck } from "lucide-react"
+import { motion, AnimatePresence } from "motion/react"
+import { Terminal, LogOut, ShieldCheck, Menu, X } from "lucide-react"
 import { NotificationBell } from "@/components/NotificationBell"
 
 /* ---------------------------------------------------------------------------
@@ -27,6 +29,12 @@ export function ProductNav() {
   // panel itself re-checks server-side; this is purely a convenience link so
   // staff don't have to type /admin by hand. Invisible to normal users.
   const isStaff = (session?.user?.permissions?.length ?? 0) > 0
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  // Close the mobile menu on route change so it never lingers into the next page.
+  useEffect(() => {
+    setMenuOpen(false)
+  }, [pathname])
 
   return (
     <header className="sticky top-0 z-40 px-4 pt-4">
@@ -89,13 +97,75 @@ export function ProductNav() {
           <NotificationBell />
           <button
             onClick={() => signOut({ callbackUrl: "/" })}
-            className="inline-flex items-center gap-1.5 rounded-full border border-border/70 px-4 py-1.5 text-[13px] text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+            className="hidden items-center gap-1.5 rounded-full border border-border/70 px-4 py-1.5 text-[13px] text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground sm:inline-flex"
           >
             <LogOut size={14} />
             <span className="hidden sm:inline">Log out</span>
           </button>
+          <button
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+            className="grid h-8 w-8 place-items-center rounded-full border border-border/70 text-foreground transition-colors hover:border-primary/50 md:hidden"
+          >
+            {menuOpen ? <X size={16} /> : <Menu size={16} />}
+          </button>
         </div>
       </nav>
+
+      <AnimatePresence>
+        {menuOpen ? (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.15 }}
+            className="mx-auto mt-2 flex max-w-6xl flex-col gap-1 rounded-3xl border border-border/70 bg-background/95 p-3 backdrop-blur-xl md:hidden"
+          >
+            {LINKS.map((l) => {
+              const active =
+                l.href === "/topics"
+                  ? pathname === "/topics" || pathname.startsWith("/topics/")
+                  : pathname === l.href
+              return (
+                <Link
+                  key={l.href}
+                  href={l.href}
+                  className={`rounded-2xl px-4 py-2.5 text-sm transition-colors ${
+                    active
+                      ? "bg-secondary text-foreground"
+                      : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+                  }`}
+                >
+                  {l.label}
+                </Link>
+              )
+            })}
+
+            {isStaff ? (
+              <Link
+                href="/admin"
+                className={`flex items-center gap-1.5 rounded-2xl px-4 py-2.5 text-sm transition-colors ${
+                  pathname.startsWith("/admin")
+                    ? "bg-primary/15 text-foreground"
+                    : "text-primary hover:bg-primary/10 hover:text-foreground"
+                }`}
+              >
+                <ShieldCheck size={14} />
+                Admin Control
+              </Link>
+            ) : null}
+
+            <button
+              onClick={() => signOut({ callbackUrl: "/" })}
+              className="flex items-center gap-1.5 rounded-2xl px-4 py-2.5 text-left text-sm text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground sm:hidden"
+            >
+              <LogOut size={14} />
+              Log out
+            </button>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </header>
   )
 }

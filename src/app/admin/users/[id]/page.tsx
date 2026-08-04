@@ -1,14 +1,19 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
+import { Permission } from "@prisma/client"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { hasPermission, requirePermissionPage } from "@/lib/authz"
 import { Avatar } from "@/components/admin/Avatar"
 import { ModerationAction } from "@/components/admin/ModerationAction"
 import { BanUserControl } from "@/components/admin/BanUserControl"
+import { PermissionsControl } from "@/components/admin/PermissionsControl"
 import { isBanActive, isBanExpired, isPermanentBan, formatRemaining } from "@/lib/ban"
 import { banUser, unbanUser, warnUser, revokeSubmission, restoreSubmission } from "../../_actions/moderation"
+import { updatePermissions } from "../../_actions/permissions"
 import { ArrowLeft, Ban, ShieldCheck, Mail, MapPin, Code2, Globe } from "lucide-react"
+
+const ALL_PERMISSIONS: string[] = Object.values(Permission)
 
 export const dynamic = "force-dynamic"
 
@@ -36,6 +41,7 @@ export default async function AdminUserDetailPage({
   const canWarn = hasPermission(session, "WARN_USER")
   const canRevoke = hasPermission(session, "REVOKE_SUBMISSION")
   const canSeeAudit = hasPermission(session, "VIEW_AUDIT")
+  const canManageAdmins = hasPermission(session, "MANAGE_ADMINS")
 
   const user = await prisma.user.findUnique({
     where: { id },
@@ -167,35 +173,49 @@ export default async function AdminUserDetailPage({
           </div>
         </div>
 
-        {/* Moderation controls */}
+        {/* Moderation + admin controls */}
         <div className="flex flex-col items-start gap-2 sm:items-end">
-          {isStaffTarget || isSelf ? (
-            <p className="text-xs text-muted-foreground">
-              {isSelf ? "This is your account." : "Staff account — protected."}
-            </p>
+          {isSelf ? (
+            <p className="text-xs text-muted-foreground">This is your account.</p>
           ) : (
             <>
-              {canBan &&
-                (user.banned ? (
-                  <ModerationAction
-                    action={unbanUser}
-                    hiddenFields={{ userId: user.id }}
-                    label={banExpired ? "Clear expired ban" : "Unban"}
-                    title="Lift the ban on this account"
-                    tone="good"
-                    placeholder="Reason for unbanning…"
-                  />
-                ) : (
-                  <BanUserControl action={banUser} userId={user.id} />
-                ))}
-              {canWarn ? (
-                <ModerationAction
-                  action={warnUser}
-                  hiddenFields={{ userId: user.id }}
-                  label="Issue warning"
-                  title="Send a warning to this user"
-                  tone="warn"
-                  placeholder="What is the warning for?"
+              {isStaffTarget ? (
+                <p className="text-xs text-muted-foreground">
+                  Staff account — protected from ban/warn.
+                </p>
+              ) : (
+                <>
+                  {canBan &&
+                    (user.banned ? (
+                      <ModerationAction
+                        action={unbanUser}
+                        hiddenFields={{ userId: user.id }}
+                        label={banExpired ? "Clear expired ban" : "Unban"}
+                        title="Lift the ban on this account"
+                        tone="good"
+                        placeholder="Reason for unbanning…"
+                      />
+                    ) : (
+                      <BanUserControl action={banUser} userId={user.id} />
+                    ))}
+                  {canWarn ? (
+                    <ModerationAction
+                      action={warnUser}
+                      hiddenFields={{ userId: user.id }}
+                      label="Issue warning"
+                      title="Send a warning to this user"
+                      tone="warn"
+                      placeholder="What is the warning for?"
+                    />
+                  ) : null}
+                </>
+              )}
+              {canManageAdmins ? (
+                <PermissionsControl
+                  action={updatePermissions}
+                  userId={user.id}
+                  allPermissions={ALL_PERMISSIONS}
+                  currentPermissions={user.permissions}
                 />
               ) : null}
             </>

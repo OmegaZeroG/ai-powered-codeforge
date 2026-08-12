@@ -15,7 +15,7 @@ import MonacoEditor, { type Monaco } from "@monaco-editor/react"
 import type { editor as MonacoEditorNS } from "monaco-editor"
 import { defineCodeForgeTheme } from "@/components/Editor"
 import { ContestCountdown } from "@/components/contests/ContestCountdown"
-import { DifficultyTag } from "@/components/Verdict"
+import { DifficultyTag, HiddenTestFailureNote } from "@/components/Verdict"
 import type { Language, SubmitResponse, EnqueueResponse, Difficulty } from "@/types"
 import {
   Play,
@@ -496,6 +496,10 @@ export function ContestArena({
                       </span>
                     </div>
                   )}
+                  {activeResult.verdict !== "ACCEPTED" &&
+                    activeResult.testResults.every((t) => t.passed) && (
+                      <HiddenTestFailureNote verdict={activeResult.verdict} />
+                    )}
                   {activeResult.testResults.map((test, i) => (
                     <div key={i} className="rounded-md border border-edge p-3">
                       <div className="mb-2 flex items-center gap-2">

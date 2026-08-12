@@ -16,7 +16,11 @@ import {
 import { EnqueueResponse, RunResponse } from "@/types"
 import { writeDraft } from "@/lib/draft"
 import { pollSubmission } from "@/lib/poll"
-import { VerdictStamp, AcceptedStamp } from "@/components/Verdict"
+import {
+  VerdictStamp,
+  AcceptedStamp,
+  HiddenTestFailureNote,
+} from "@/components/Verdict"
 
 export function OutputPanel() {
   const {
@@ -302,6 +306,11 @@ export function OutputPanel() {
                 />
               </div>
             )}
+            {result.verdict !== "ACCEPTED" &&
+              result.verdict !== "PENDING" &&
+              result.testResults.every((t) => t.passed) && (
+                <HiddenTestFailureNote verdict={result.verdict} />
+              )}
             {result.testResults.map((test, i) => (
               <div
                 key={i}

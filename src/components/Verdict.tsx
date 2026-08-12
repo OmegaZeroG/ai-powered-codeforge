@@ -1,3 +1,4 @@
+import { AlertTriangle } from "lucide-react"
 import type { Difficulty, Verdict } from "@/types"
 
 /* ---------------------------------------------------------------------------
@@ -56,6 +57,34 @@ export function VerdictStamp({
         </span>
       )}
     </span>
+  )
+}
+
+// Only verdicts that are meaningfully "this specific test case failed" get a
+// hidden-test note — a compile error isn't attributable to any one test case,
+// so it's excluded (the CE badge + stderr already explain it on its own).
+const HIDDEN_FAILURE_COPY: Partial<Record<Verdict, string>> = {
+  WRONG_ANSWER: "produced the wrong output on a hidden test case",
+  RUNTIME_ERROR: "crashed on a hidden test case",
+  TIME_LIMIT_EXCEEDED: "timed out on a hidden test case",
+}
+
+/** Shown when every *visible* (sample) test case passed but the verdict still
+ *  failed — makes clear the failure is on a hidden test case rather than
+ *  leaving people staring at all-green samples next to a bare "Wrong Answer".
+ *  Never reveals the hidden test's input/expected/actual. */
+export function HiddenTestFailureNote({ verdict }: { verdict: Verdict }) {
+  const copy = HIDDEN_FAILURE_COPY[verdict]
+  if (!copy) return null
+  return (
+    <div className="flex items-start gap-2 rounded-md border border-wa/40 bg-wa/5 p-3">
+      <AlertTriangle size={14} className="mt-0.5 shrink-0 text-wa" />
+      <p className="text-xs text-fg-dim">
+        All sample test cases passed — your solution {copy}. Hidden test
+        cases aren&apos;t shown, so their input and expected output stay
+        hidden.
+      </p>
+    </div>
   )
 }
 

@@ -4,6 +4,7 @@ import * as React from "react"
 import { Target, CheckCircle2, Loader2 } from "lucide-react"
 import type { Task } from "@/lib/gamification"
 import { claimTask } from "@/app/profile/actions"
+import { useToast } from "@/components/ui/toast"
 
 /* ---------------------------------------------------------------------------
    TasksCard — daily/weekly objectives with real "Claim +XP" buttons.
@@ -17,6 +18,7 @@ function TaskRow({ task }: { task: Task }) {
   const [pending, startTransition] = React.useTransition()
   const [claimed, setClaimed] = React.useState(task.claimed)
   const [error, setError] = React.useState<string | null>(null)
+  const toast = useToast()
 
   // Keep in sync if the server sends a fresh value after revalidation.
   React.useEffect(() => setClaimed(task.claimed), [task.claimed])
@@ -27,8 +29,10 @@ function TaskRow({ task }: { task: Task }) {
       const res = await claimTask(task.key)
       if (res.ok) {
         setClaimed(true)
+        toast.success("Reward claimed.")
       } else {
         setError(res.error)
+        toast.error(res.error)
       }
     })
   }

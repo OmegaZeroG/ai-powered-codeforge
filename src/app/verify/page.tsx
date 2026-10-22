@@ -53,14 +53,18 @@ function VerifyInner() {
   return (
     <div className="landing min-h-screen grid place-items-center px-4">
       <div className="w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card p-7 shadow-2xl glow-orange">
-        <div className="flex items-center gap-2.5">
+        <Link
+          href="/"
+          aria-label="CodeForge home"
+          className="flex w-fit items-center gap-2.5 transition-opacity hover:opacity-80"
+        >
           <div className="grid h-7 w-7 place-items-center rounded-md bg-primary">
             <Terminal className="h-4 w-4 text-primary-foreground" strokeWidth={2.5} />
           </div>
           <span className="font-sans text-[15px] font-medium tracking-tight">
             Codeforge
           </span>
-        </div>
+        </Link>
 
         <div className="mt-6 flex flex-col items-center gap-3 text-center">
           {state === "verifying" && (

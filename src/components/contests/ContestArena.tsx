@@ -11,9 +11,17 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import MonacoEditor, { type Monaco } from "@monaco-editor/react"
+import dynamic from "next/dynamic"
+import type { Monaco } from "@monaco-editor/react"
 import type { editor as MonacoEditorNS } from "monaco-editor"
 import { defineCodeForgeTheme } from "@/components/Editor"
+
+// Same reasoning as EditorOutputSplit: Monaco is DOM-only and large — defer it
+// to its own chunk instead of shipping it with the rest of the arena's JS.
+const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
+  ssr: false,
+  loading: () => <div className="h-full w-full animate-pulse bg-ink-deep" />,
+})
 import { ContestCountdown } from "@/components/contests/ContestCountdown"
 import { DifficultyTag, HiddenTestFailureNote } from "@/components/Verdict"
 import type { Language, SubmitResponse, EnqueueResponse, Difficulty } from "@/types"

@@ -3,7 +3,7 @@ import { requirePermissionPage } from "@/lib/authz"
 import { AdminNav } from "@/components/admin/AdminNav"
 
 export const metadata: Metadata = {
-  title: "Mastercontrol — CodeForge",
+  title: "Mastercontrol",
   robots: { index: false, follow: false },
 }
 

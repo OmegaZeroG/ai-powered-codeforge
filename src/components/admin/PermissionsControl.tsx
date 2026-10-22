@@ -6,6 +6,7 @@
 // consistent, but this one carries a checkbox list instead of a reason field.
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
+import { useToast } from "@/components/ui/toast"
 
 type ActionResult = { ok: true } | { ok: false; error: string }
 
@@ -39,8 +40,9 @@ export function PermissionsControl({
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
   const router = useRouter()
+  const toast = useToast()
 
-  function toggle(p: string) {
+function toggle(p: string) {
     setSelected((prev) => {
       const next = new Set(prev)
       if (next.has(p)) next.delete(p)
@@ -58,9 +60,11 @@ export function PermissionsControl({
       const res = await action(fd)
       if (res.ok) {
         setOpen(false)
+        toast.success("Permissions updated.")
         router.refresh()
       } else {
         setError(res.error)
+        toast.error(res.error)
       }
     })
   }

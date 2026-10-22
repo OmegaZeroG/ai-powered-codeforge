@@ -10,8 +10,26 @@ import { loadLeaderboard } from "@/lib/contest-leaderboard"
 import { ProductNav } from "@/components/ProductNav"
 import { Lock } from "lucide-react"
 import type { Language } from "@/types"
+import type { Metadata } from "next"
 
 export const dynamic = "force-dynamic"
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}): Promise<Metadata> {
+  const { slug } = await params
+  const contest = await prisma.contest.findUnique({
+    where: { slug },
+    select: { title: true },
+  })
+  return {
+    title: contest?.title ?? "Contest not found",
+    description:
+      "A CodeForge rated round: three problems, ICPC-style scoring, and a live leaderboard.",
+  }
+}
 
 export default async function ContestArenaPage({
   params,
@@ -21,7 +39,7 @@ export default async function ContestArenaPage({
   const { slug } = await params
   const session = await auth()
   if (!session?.user?.id) {
-    redirect(`/login?next=/contests/${slug}`)
+    redirect(`/login?callbackUrl=/contests/${slug}`)
   }
 
   const contest = await prisma.contest.findUnique({

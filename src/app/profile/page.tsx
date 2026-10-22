@@ -22,7 +22,7 @@ import { MapPin, LinkIcon } from "lucide-react"
 import type { Difficulty } from "@/types"
 
 export const metadata = {
-  title: "Profile — CodeForge",
+  title: "Profile",
   description:
     "Your CodeForge profile: rank, badges, daily tasks, solve calendar and streak.",
 }

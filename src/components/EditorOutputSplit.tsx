@@ -1,9 +1,24 @@
 "use client"
 
-import { Editor } from "@/components/Editor"
+import dynamic from "next/dynamic"
 import { OutputPanel } from "@/components/OutputPanel"
 import { ResizeHandle } from "@/components/ResizeHandle"
 import { useDragResize } from "@/hooks/useDragResize"
+
+// Monaco (via @monaco-editor/react) is a large, DOM-only dependency with
+// nothing useful to server-render. Loading it through next/dynamic instead of
+// a static import moves it into its own chunk that only loads once this
+// component actually mounts, instead of shipping with every page that
+// imports EditorOutputSplit.
+const Editor = dynamic(
+  () => import("@/components/Editor").then((m) => m.Editor),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-full w-full animate-pulse bg-ink-deep" />
+    ),
+  }
+)
 
 const OUTPUT_MIN = 120
 const OUTPUT_MAX = 640

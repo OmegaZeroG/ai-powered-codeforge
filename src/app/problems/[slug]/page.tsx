@@ -9,6 +9,25 @@ import { ProtectedStatement } from "@/components/ProtectedStatement"
 import { AIPanelMount } from "@/components/AIPanelMount"
 import { ProblemDetail, Language } from "@/types"
 import { DifficultyTag } from "@/components/Verdict"
+import type { Metadata } from "next"
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}): Promise<Metadata> {
+  const { slug } = await params
+  const problem = await prisma.problem.findUnique({
+    where: { slug },
+    select: { title: true, difficulty: true, topic: { select: { name: true } } },
+  })
+  if (!problem) return { title: "Problem not found" }
+  const level = problem.difficulty.charAt(0) + problem.difficulty.slice(1).toLowerCase()
+  return {
+    title: problem.title,
+    description: `Solve ${problem.title} (${level}, ${problem.topic.name}) in the browser and get judged against hidden test cases.`,
+  }
+}
 
 export default async function ProblemPage({
   params,

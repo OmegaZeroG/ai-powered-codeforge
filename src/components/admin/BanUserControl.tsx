@@ -5,6 +5,7 @@
 // Submits duration + optional customUntil + reason to the banUser server action.
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
+import { useToast } from "@/components/ui/toast"
 import { BAN_DURATIONS } from "@/lib/ban"
 
 type ActionResult = { ok: true } | { ok: false; error: string }
@@ -23,6 +24,7 @@ export function BanUserControl({
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
   const router = useRouter()
+  const toast = useToast()
 
   function submit() {
     setError(null)
@@ -36,9 +38,11 @@ export function BanUserControl({
       if (res.ok) {
         setOpen(false)
         setReason("")
+        toast.success("Ban applied.")
         router.refresh()
       } else {
         setError(res.error)
+        toast.error(res.error)
       }
     })
   }

@@ -11,7 +11,7 @@ import type { Difficulty } from "@/types"
 export const dynamic = "force-dynamic"
 
 export const metadata = {
-  title: "My contests — CodeForge",
+  title: "My contests",
   description: "Every rated round you've competed in, with your rank and score.",
 }
 

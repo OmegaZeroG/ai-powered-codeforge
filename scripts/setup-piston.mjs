@@ -1,5 +1,9 @@
 
 const PISTON_URL = process.env.PISTON_URL || "http://localhost:2000/api/v2"
+// Only set when Piston sits behind a key-checking proxy (a remote/production VM).
+const AUTH_HEADERS = process.env.PISTON_API_KEY
+  ? { "X-API-Key": process.env.PISTON_API_KEY }
+  : {}
 
 const REQUIRED_PACKAGES = [
   { language: "node", version: "18.15.0" }, // provides "javascript" alias
@@ -15,7 +19,7 @@ async function waitUntilReady() {
   const deadline = Date.now() + WAIT_FOR_READY_TIMEOUT_MS
   while (Date.now() < deadline) {
     try {
-      const res = await fetch(`${PISTON_URL}/runtimes`)
+      const res = await fetch(`${PISTON_URL}/runtimes`, { headers: AUTH_HEADERS })
       if (res.ok) return
     } catch {
       // not up yet, keep polling
@@ -29,7 +33,7 @@ async function waitUntilReady() {
 }
 
 async function getInstalledPackages() {
-  const res = await fetch(`${PISTON_URL}/packages`)
+  const res = await fetch(`${PISTON_URL}/packages`, { headers: AUTH_HEADERS })
   if (!res.ok) {
     throw new Error(`Failed to list packages: ${res.status} ${await res.text()}`)
   }
@@ -43,7 +47,7 @@ const INSTALL_RETRIES = 2
 async function installPackageOnce({ language, version }) {
   const res = await fetch(`${PISTON_URL}/packages`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...AUTH_HEADERS },
     body: JSON.stringify({ language, version }),
     signal: AbortSignal.timeout(INSTALL_TIMEOUT_MS),
   })

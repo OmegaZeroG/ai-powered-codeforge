@@ -6,6 +6,7 @@
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { CalendarPlus, Trash2 } from "lucide-react"
+import { useToast } from "@/components/ui/toast"
 
 const CONTEST_DAY = 0 // Sunday
 const CONTEST_HOUR = 22 // 10 PM
@@ -46,6 +47,7 @@ export function CreateContestControl({
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
   const router = useRouter()
+  const toast = useToast()
 
   function submit() {
     setError(null)
@@ -68,9 +70,11 @@ export function CreateContestControl({
     startTransition(async () => {
       const res = await action(fd)
       if (res.ok) {
+        toast.success("Contest scheduled.")
         router.refresh()
       } else {
         setError(res.error)
+        toast.error(res.error)
       }
     })
   }
@@ -146,6 +150,7 @@ export function CancelContestButton({
   const [confirming, setConfirming] = useState(false)
   const [pending, startTransition] = useTransition()
   const router = useRouter()
+  const toast = useToast()
 
   function cancel() {
     setError(null)
@@ -154,9 +159,11 @@ export function CancelContestButton({
     startTransition(async () => {
       const res = await action(fd)
       if (res.ok) {
+        toast.success("Contest cancelled.")
         router.refresh()
       } else {
         setError(res.error)
+        toast.error(res.error)
         setConfirming(false)
       }
     })

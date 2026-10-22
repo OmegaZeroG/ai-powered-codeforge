@@ -18,6 +18,13 @@ import {
 import { TasksCard } from "@/components/gamification/TasksCard"
 import { SolveCalendar } from "@/components/gamification/SolveCalendar"
 import type { Difficulty } from "@/types"
+import type { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: "Topics",
+  description:
+    "Work through DSA topics in order — arrays to dynamic programming — with adaptive recommendations, ranks, streaks, and daily tasks.",
+}
 
 /* Warm-ember difficulty pill (easy/medium/hard tokens), scoped to this page so
    the shared product DifficultyTag keeps its true-black identity elsewhere. */

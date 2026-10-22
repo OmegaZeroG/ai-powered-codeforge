@@ -285,6 +285,15 @@
   html {
     @apply font-sans;
   }
+  /* Never let the page scroll sideways. `clip` (not `hidden`) so it doesn't
+     turn html/body into scroll containers, which would break `position:
+     sticky` headers. Genuinely wide content (tables, code) scrolls inside its
+     own container instead. */
+  html,
+  body {
+    max-width: 100%;
+    overflow-x: clip;
+  }
 }
 
 /* ---------------------------------------------------------------------------

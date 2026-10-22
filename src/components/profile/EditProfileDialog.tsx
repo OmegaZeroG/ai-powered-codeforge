@@ -4,6 +4,7 @@ import * as React from "react"
 import { createPortal } from "react-dom"
 import { Settings, X, Loader2 } from "lucide-react"
 import { updateProfile } from "@/app/profile/actions"
+import { useToast } from "@/components/ui/toast"
 
 /* ---------------------------------------------------------------------------
    EditProfileDialog — a self-contained modal for editing the profile fields.
@@ -24,6 +25,7 @@ export function EditProfileDialog({ initial }: { initial: ProfileValues }) {
   const [open, setOpen] = React.useState(false)
   const [pending, startTransition] = React.useTransition()
   const [error, setError] = React.useState<string | null>(null)
+  const toast = useToast()
   // Portal target is only available in the browser; gate the portal on mount
   // so server render and first client render agree.
   const [mounted, setMounted] = React.useState(false)
@@ -49,8 +51,10 @@ export function EditProfileDialog({ initial }: { initial: ProfileValues }) {
       const res = await updateProfile(formData)
       if (res.ok) {
         setOpen(false)
+        toast.success("Profile updated.")
       } else {
         setError(res.error)
+        toast.error(res.error)
       }
     })
   }

@@ -10,8 +10,15 @@ import {
 } from "@/lib/contest"
 import { Trophy, CalendarClock, Clock } from "lucide-react"
 import type { Difficulty } from "@/types"
+import type { Metadata } from "next"
 
 export const dynamic = "force-dynamic"
+
+export const metadata: Metadata = {
+  title: "Contests",
+  description:
+    "Weekly rated rounds with ICPC-style scoring: three problems, one hour, and a live leaderboard.",
+}
 
 const DIFF_PILL: Record<Difficulty, string> = {
   EASY: "text-easy border-easy/40",
@@ -133,7 +140,7 @@ export default async function ContestsPage() {
               </p>
               <div className="mt-6">
                 <Link
-                  href="/problems"
+                  href="/topics"
                   className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
                 >
                   Practice problems

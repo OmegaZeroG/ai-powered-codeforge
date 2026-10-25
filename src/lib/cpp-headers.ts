@@ -47,7 +47,7 @@ export function detectHeaders(code: string): string[] {
   const body = code
     .replace(/#include\s*<bits\/stdc\+\+\.h>/g, "")
     .replace(/\/\/[^\n]*/g, "");
-  const found = new Set();
+  const found = new Set<string>();
   for (const [header, re] of RULES) {
     if (re.test(body)) found.add(header);
   }

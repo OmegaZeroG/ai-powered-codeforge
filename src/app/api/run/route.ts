@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { runCode } from "@/lib/piston"
+import { rateLimit, tooManyRequests } from "@/lib/rate-limit"
 import type { Language } from "@/types"
 
 // Scratchpad run: execute code ONCE against user-supplied stdin and return the
@@ -9,11 +10,21 @@ import type { Language } from "@/types"
 // Kept synchronous (a single Piston call) because there's nothing to fan out.
 const SUPPORTED: Language[] = ["javascript", "python", "cpp", "java"]
 
+// Abuse guards: every run costs real CPU on the (small) Piston host, and this
+// route is open to any logged-in user.
+const MAX_CODE_CHARS = 64_000
+const MAX_STDIN_CHARS = 64_000
+const RUNS_PER_MINUTE = 20
+
 export async function POST(request: Request) {
   const session = await auth()
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
+
+  // Throttle per user: 20 scratchpad runs per minute.
+  const rl = await rateLimit(`run:${session.user.id}`, RUNS_PER_MINUTE, 60_000)
+  if (!rl.ok) return tooManyRequests(rl)
 
   let body: { code?: string; language?: string; stdin?: string }
   try {
@@ -25,6 +36,18 @@ export async function POST(request: Request) {
   const { code, language, stdin } = body
   if (!code?.trim()) {
     return NextResponse.json({ error: "Code is required" }, { status: 400 })
+  }
+  if (code.length > MAX_CODE_CHARS) {
+    return NextResponse.json(
+      { error: `Code is too long (max ${MAX_CODE_CHARS} characters)` },
+      { status: 413 }
+    )
+  }
+  if (typeof stdin === "string" && stdin.length > MAX_STDIN_CHARS) {
+    return NextResponse.json(
+      { error: `Input is too long (max ${MAX_STDIN_CHARS} characters)` },
+      { status: 413 }
+    )
   }
   if (!language || !SUPPORTED.includes(language as Language)) {
     return NextResponse.json(

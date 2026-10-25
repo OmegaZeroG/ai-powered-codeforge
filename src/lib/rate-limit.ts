@@ -101,14 +101,22 @@ export async function rateLimit(
 ): Promise<RateLimitResult> {
   if (!redis) return memoryRateLimit(key, limit, windowMs)
 
-  const limiter = getUpstashLimiter(limit, windowMs)
-  const { success, remaining, reset } = await limiter.limit(key)
-  return {
-    ok: success,
-    remaining,
-    limit,
-    resetAt: reset,
-    retryAfterSec: success ? 0 : Math.max(0, Math.ceil((reset - Date.now()) / 1000)),
+  try {
+    const limiter = getUpstashLimiter(limit, windowMs)
+    const { success, remaining, reset } = await limiter.limit(key)
+    return {
+      ok: success,
+      remaining,
+      limit,
+      resetAt: reset,
+      retryAfterSec: success ? 0 : Math.max(0, Math.ceil((reset - Date.now()) / 1000)),
+    }
+  } catch (err) {
+    // Upstash unreachable (deleted database, DNS failure, outage). Don't take
+    // down every rate-limited route with it: degrade to the per-instance
+    // in-memory limiter, which still blunts casual abuse.
+    console.error("Upstash rate limiter failed, using in-memory fallback:", err)
+    return memoryRateLimit(key, limit, windowMs)
   }
 }
 

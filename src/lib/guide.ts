@@ -3,9 +3,9 @@
 
    Each step can point at a real element on the page through `target`, which is
    the value of that element's `data-guide="..."` attribute. When the element
-   is on screen the guide highlights it and explains what it is and what its
-   buttons do; when it is not (hidden on a small screen, or only present in
-   some states) the step is simply shown as a card, so a guide never breaks.
+   is on screen the guide highlights it and puts a small card next to it; when
+   it is not (hidden on a small screen, or only present in some states) the
+   step is shown as a plain centred card, so a guide never breaks.
 
    "Seen" is remembered per account, per browser and per page (localStorage),
    so the guide for a page opens by itself once, then only when asked for. A
@@ -24,218 +24,179 @@ export type GuideId =
 
 export interface GuideStep {
   title: string
+  /** One short sentence. */
   body: string
-  /** One line per control, written as "Name: what it does". */
+  /** Up to three very short lines. */
   points?: string[]
   /** `data-guide` value of the element to highlight on the page. */
   target?: string
 }
 
 export interface PageGuide {
-  /** Shown in the dialog header, e.g. "Problem page guide". */
+  /** Small label shown on the card, e.g. "Problem page". */
   name: string
-  /** Whether it may open by itself the first time. Off for timed/staff screens. */
+  /** Whether it may open by itself the first time. Off for timed screens. */
   autoOpen: boolean
   steps: GuideStep[]
 }
 
 export const GUIDES: Record<GuideId, PageGuide> = {
   topics: {
-    name: "Topics page",
+    name: "Topics",
     autoOpen: true,
     steps: [
       {
-        title: "Your home page",
-        body: "Topics is where you choose what to practise. Everything here adapts to the problems you have solved.",
+        title: "Welcome",
+        body: "Pick what to practise. Everything here adapts to what you have solved.",
         points: [
-          "Left column: your rank, badges and tasks",
-          "Middle: your skill meter, a recommended problem and every topic",
-          "Right column: your solve calendar and streak",
+          "Left: rank, badges and tasks",
+          "Middle: skill meter, recommendation, topics",
+          "Right: solve calendar and streak",
         ],
       },
       {
-        title: "Navigation bar",
-        body: "The bar across the top works on every page.",
+        title: "Navigation",
+        body: "This bar is on every page.",
         points: [
-          "Problems: back to this topic list",
-          "Editor: a free scratchpad, no problem attached",
-          "Contests: timed rounds against other users",
-          "Profile: your stats and account settings",
-          "Guide: opens the walkthrough for whichever page you are on",
-          "Bell: your notifications. Log out: ends your session",
+          "Problems and Editor (free scratchpad)",
+          "Contests and Profile",
+          "Guide opens help for the page you are on",
         ],
         target: "product-nav",
       },
       {
-        title: "Your calibration meter",
-        body: "This bar shows where your skill sits between Easy and Hard, worked out from the problems you solved and your recent results.",
+        title: "Calibration",
+        body: "Where your skill sits between Easy and Hard.",
         points: [
-          "The marker moves as you solve more or fail more",
-          "The highlighted word is the difficulty the judge is targeting for you right now",
+          "It moves as you solve or fail",
+          "The highlighted word is your current target difficulty",
         ],
         target: "calibration",
       },
       {
-        title: "Recommended for you",
-        body: "One click takes you to the next problem picked for your current level, so you never have to guess what to try.",
-        points: ["Click the card to open the problem in the editor"],
+        title: "Recommended",
+        body: "The next problem picked for your level. Click it to open.",
         target: "recommended",
       },
       {
-        title: "Topic cards",
-        body: "Each card is one topic, from Arrays to Dynamic Programming, shown in a sensible learning order.",
-        points: [
-          "x/y solved: how many of its problems you have accepted",
-          "Progress bar under each card fills as you solve, and turns green when the topic is complete",
-          "Click a card to see that topic's problems",
-        ],
+        title: "Topics",
+        body: "Each card is a topic. The counter and bar show your progress; click to see its problems.",
         target: "topics-list",
       },
       {
         title: "Rank and XP",
-        body: "Every accepted problem earns XP, and harder problems earn more. XP moves you up the tiers.",
-        points: ["Tiers run Iron, Bronze, Silver, Gold, Platinum, Diamond, Master"],
+        body: "Accepted problems earn XP, and harder ones earn more.",
+        points: ["Iron, Bronze, Silver, Gold, Platinum, Diamond, Master"],
         target: "rank-card",
       },
       {
         title: "Badges and tasks",
-        body: "Badges are unlocked by milestones. Tasks are small daily and weekly goals that give you a reason to come back.",
+        body: "Badges mark milestones. Tasks are small daily and weekly goals.",
         target: "tasks-card",
       },
       {
-        title: "Solve calendar and streak",
-        body: "The calendar marks every day you solved something. Your streak counts consecutive days, and it survives until the end of today if you solved yesterday.",
-        points: [
-          "Arrow buttons on the calendar switch between months",
-          "The streak card also shows your best streak ever",
-        ],
+        title: "Calendar and streak",
+        body: "Days you solved something are marked. Your streak counts consecutive days.",
         target: "solve-calendar",
       },
     ],
   },
 
   topic: {
-    name: "Topic page",
+    name: "Topic",
     autoOpen: true,
     steps: [
       {
-        title: "Problems in this topic",
-        body: "Every problem in the topic is listed with its difficulty. They are sorted to save you time.",
+        title: "Problems",
+        body: "Sorted to save you time.",
         points: [
-          "Unsolved problems closest to your level come first. The glowing one with a sparkle is the best match for you right now",
-          "A green tick means you have already solved it, and those sink to the bottom",
-          "Click any row to open the problem",
+          "The sparkle marks your best match right now",
+          "Solved problems sink to the bottom with a tick",
+          "Click a row to open it",
         ],
         target: "topic-problems",
       },
       {
-        title: "Difficulty tags",
-        body: "Each problem is tagged Easy, Medium or Hard. Hard problems earn more XP when accepted.",
+        title: "Difficulty",
+        body: "Easy, Medium or Hard. Harder problems earn more XP.",
       },
       {
-        title: "Back to all topics",
-        body: "This link returns you to the full topic list.",
+        title: "Back",
+        body: "Return to the full topic list.",
         target: "topic-back",
       },
     ],
   },
 
   problem: {
-    name: "Problem page",
+    name: "Problem",
     autoOpen: true,
     steps: [
       {
-        title: "How this page is laid out",
-        body: "The problem is on the left, your code editor is on the right, and results appear under the editor.",
-        points: [
-          "Drag the dividers between panels to resize them",
-          "On a phone the panels stack on top of each other",
-        ],
+        title: "Layout",
+        body: "Problem on the left, editor on the right, results below.",
+        points: ["Drag the dividers to resize panels"],
       },
       {
-        title: "Problem statement",
-        body: "Read this first. It holds the task, the constraints and worked examples.",
-        points: [
-          "Constraints tell you the input sizes, which hints at the speed you need",
-          "Examples show real inputs and the exact output expected",
-          "The link at the top goes back to this problem's topic",
-        ],
+        title: "Statement",
+        body: "The task, constraints and examples. Read it first.",
         target: "statement",
       },
       {
-        title: "Language and Reset",
-        body: "Choose the language you want to code in. Your code and starter template switch with it.",
-        points: [
-          "Language list: JavaScript, Python, C++ or Java",
-          "Reset: restores the starter code. It asks you to confirm first so you cannot wipe your work by accident",
-        ],
+        title: "Language",
+        body: "Pick a language. Reset restores the starter code and asks you to confirm.",
         target: "language-select",
       },
       {
-        title: "Code editor",
-        body: "A full code editor with syntax colouring, auto-indent and bracket matching. Your solution reads its input and prints its answer, exactly as the examples show.",
+        title: "Editor",
+        body: "Read the input and print the answer, exactly as the examples show.",
         target: "editor",
       },
       {
         title: "Save",
-        body: "Saves a draft of your code in this browser so you can come back later.",
-        points: [
-          "Save: saves right now",
-          "Arrow beside it: choose when saving happens. Manual, Auto-save as you type, On submit, or On switch",
-        ],
+        body: "Saves a draft in this browser.",
+        points: ["The arrow sets when: manual, auto, on submit or on switch"],
         target: "save-btn",
       },
       {
         title: "Share",
-        body: "Copies your current code to the clipboard so you can paste it somewhere else.",
+        body: "Copies your code to the clipboard.",
         target: "share-btn",
       },
       {
         title: "AI tutor",
-        body: "Turns the AI side panel on or off. It can see your code and the problem, and it is built to nudge you rather than hand over the answer.",
-        points: [
-          "Hint: the smallest push forward",
-          "Explain: what your code does, without solving it",
-          "Fix: helps you find why it fails",
-          "Rate: scores your code out of 10 on correctness, speed, memory, optimality and style",
-          "You can also type a question in the box. The bin icon clears the chat and X closes the panel",
-        ],
+        body: "A tutor that sees your code. It nudges you and never hands over the answer.",
+        points: ["Hint, Explain, Fix and Rate buttons, or ask your own question"],
         target: "ai-toggle",
       },
       {
-        title: "Run: try the examples",
-        body: "Runs your code on the example test cases only, the ones shown in the statement. It is instant and records nothing.",
-        points: [
-          "Use it as often as you like to check your logic",
-          "It does not count as a submission and does not change your XP, streak or progress",
-          "Passing here does not mean accepted. Hidden tests are not checked",
-        ],
+        title: "Run",
+        body: "Tries your code on the example tests only. Instant, and nothing is recorded.",
+        points: ["Passing here is not Accepted. Hidden tests are not checked"],
         target: "run-btn",
       },
       {
-        title: "Submit: the real judge",
-        body: "Sends your code to the judge, which runs it against every test case, including hidden ones you cannot see.",
+        title: "Submit",
+        body: "Judges your code against every test, including hidden ones.",
         points: [
-          "You will see Queued, then Judging, then a verdict",
-          "Accepted means every test passed. It updates your rank, streak and tasks",
-          "If it fails on a hidden test you are told so, with the type of failure, but not the test itself",
+          "Queued, then Judging, then a verdict",
+          "Accepted updates your XP, streak and tasks",
+          "A hidden failure tells you the type, never the test",
         ],
         target: "submit-btn",
       },
       {
-        title: "Output and verdicts",
-        body: "Results for Run and Submit show here.",
+        title: "Output",
+        body: "Results for Run and Submit appear here.",
         points: [
-          "AC Accepted, WA Wrong Answer, RE Runtime Error, TLE Time Limit Exceeded, CE Compile Error",
-          "Each example shows the input, the expected output and your output",
-          "Explain with AI appears after a failure and opens the tutor, which can see the failing test",
-          "Bin icon: clears the output",
+          "AC accepted, WA wrong answer, RE runtime error, TLE too slow, CE compile error",
+          "After a failure, Explain with AI opens the tutor",
         ],
         target: "output-panel",
       },
       {
-        title: "Notifications and the Guide button",
-        body: "The bell shows alerts from the platform. This Guide button reopens this walkthrough whenever you want it.",
+        title: "Guide",
+        body: "Reopen this walkthrough any time.",
         target: "guide-btn",
       },
     ],
@@ -246,116 +207,96 @@ export const GUIDES: Record<GuideId, PageGuide> = {
     autoOpen: true,
     steps: [
       {
-        title: "A free scratchpad",
-        body: "This editor has no problem attached. Use it to try an idea, test a snippet or practise a language.",
+        title: "Scratchpad",
+        body: "A free editor with no problem attached. Try ideas and snippets here.",
       },
       {
         title: "Language",
-        body: "Pick JavaScript, Python, C++ or Java. The starter code changes to match.",
+        body: "JavaScript, Python, C++ or Java.",
         target: "language-select",
       },
       {
-        title: "Code editor",
-        body: "Write anything here. Programs read from standard input and print to standard output.",
+        title: "Editor",
+        body: "Programs read from standard input and print to standard output.",
         target: "editor",
       },
       {
-        title: "Standard input",
-        body: "Type what your program should read as input. Leave it empty if your program takes none.",
+        title: "Input",
+        body: "What your program reads. Leave it empty if it reads nothing.",
         target: "stdin-box",
       },
       {
         title: "Run",
-        body: "Runs your code once with the input above and shows the raw output.",
-        points: [
-          "Exit code 0 means it finished normally",
-          "stdout is what it printed; stderr is its error output",
-          "Programs that run longer than 5 seconds are stopped",
-        ],
+        body: "Runs your code once with that input and shows the raw output.",
+        points: ["Stopped after 5 seconds"],
         target: "run-btn",
       },
       {
-        title: "Output and AI review",
-        body: "Results appear here. If something goes wrong, Review with AI sends your code to the assistant.",
-        points: [
-          "In the scratchpad the AI acts as a code reviewer: Review, Explain, Find bugs and Rate",
-          "Bin icon: clears the output",
-        ],
+        title: "Output",
+        body: "stdout, stderr and the exit code. After an error, Review with AI sends your code to the assistant.",
         target: "output-panel",
       },
       {
-        title: "AI, Save and Share",
-        body: "AI opens the reviewer panel. Save keeps a draft in this browser, with the arrow to choose when. Share copies your code.",
+        title: "AI reviewer",
+        body: "Opens an assistant that can Review, Explain, Find bugs and Rate your code.",
         target: "ai-toggle",
       },
     ],
   },
 
   contests: {
-    name: "Contests page",
+    name: "Contests",
     autoOpen: true,
     steps: [
       {
         title: "Weekly contests",
-        body: "A new round every Sunday at 10 PM. Each lasts one hour and has three problems of the same difficulty.",
+        body: "Every Sunday at 10 PM: one hour, three problems of the same difficulty.",
       },
       {
-        title: "Contest cards",
-        body: "Rounds are grouped by when they happen.",
+        title: "Rounds",
+        body: "Grouped by when they happen.",
         points: [
-          "Live now: running at this moment",
-          "Upcoming: shows a countdown. Problems stay hidden until the start",
-          "Past rounds: finished, with results available",
+          "Live: running now, with Enter arena",
+          "Upcoming: countdown, problems hidden until the start",
+          "Past: finished, with View results",
         ],
         target: "contest-list",
       },
       {
-        title: "Enter arena and View results",
-        body: "Enter arena appears while a round is live and takes you to the contest. View results opens the final leaderboard of a finished round.",
-      },
-      {
-        title: "Your contest history",
-        body: "Your past contests, ranks and XP are kept in your contest history. Open your Profile and press All in the Contests card to see it.",
+        title: "History",
+        body: "Your past contests are in Profile, under Contests, then All.",
       },
     ],
   },
 
   contest: {
-    name: "Contest page",
+    name: "Contest",
     autoOpen: false,
     steps: [
       {
-        title: "The contest arena",
-        body: "A timed round. Solve as many of the three problems as you can before the clock reaches zero.",
+        title: "Arena",
+        body: "Solve as many of the three problems as you can before time runs out.",
         points: [
-          "Scoring is ICPC style: most problems solved wins, ties are broken by less penalty time",
-          "A wrong submission adds penalty time, so check carefully before you submit",
+          "Most solved wins, less penalty time breaks ties",
+          "Wrong submissions add penalty time",
         ],
       },
       {
-        title: "Timer and End contest",
-        body: "The clock counts down to the end of the round.",
-        points: [
-          "Solved: how many problems you have accepted so far",
-          "End contest: finish early. It asks you to confirm and cannot be undone",
-        ],
+        title: "Timer",
+        body: "The clock and your solved count. End contest finishes early and asks you to confirm.",
       },
       {
-        title: "Problem tabs",
-        body: "A, B and C switch between the three problems. A mark shows which ones you have solved.",
+        title: "Problems",
+        body: "The A, B and C tabs switch problems. A mark shows which you have solved.",
       },
       {
-        title: "Editor, paste and Submit",
-        body: "Write your solution in the editor.",
-        points: [
-          "Pasting into the editor is disabled during a contest, so type your own code",
-          "Submit: judges your code against every test case, hidden ones included",
-          "There is no Run button here. Test with the examples in the statement yourself",
-        ],
+        title: "Submit",
+        body: "Judges against every test, hidden ones included.",
+        points: ["Pasting is disabled in contests", "There is no Run button here"],
       },
       {
-        title: "Leaderboard and results",
-        body: "The leaderboard ranks everyone by problems solved and penalty time. After the round ends it shows final results and the XP you earned.",
+        title: "Leaderboard",
+        body: "Ranks by problems solved, then penalty time. Final results and XP appear after the round.",
       },
     ],
   },
@@ -365,71 +306,56 @@ export const GUIDES: Record<GuideId, PageGuide> = {
     autoOpen: true,
     steps: [
       {
-        title: "Your contest record",
+        title: "Your contests",
         body: "Every round you took part in, newest first.",
-        points: [
-          "Contest: the round. Click it to see its results",
-          "Rank: where you finished among all participants",
-          "Solved: problems you got accepted",
-          "Time: your total time including penalties",
-          "XP: what the round earned you",
-        ],
+        points: ["Rank, problems solved, time and XP for each", "Click a contest for its results"],
         target: "history-table",
       },
     ],
   },
 
   profile: {
-    name: "Profile page",
+    name: "Profile",
     autoOpen: true,
     steps: [
       {
-        title: "Your profile",
-        body: "Your public details and your progress in one place.",
-        points: [
-          "The small tag on your avatar is your current rank",
-          "Name, handle, join date, bio and links appear under it",
-        ],
+        title: "Profile",
+        body: "Your details. The tag on your avatar is your current rank.",
         target: "profile-header",
       },
       {
         title: "Edit profile",
-        body: "Opens a form where you can change how you appear.",
-        points: [
-          "Display name, avatar URL, bio, location, GitHub handle and website",
-          "Save changes applies them. Closing the form without saving discards them",
-        ],
+        body: "Change your name, avatar, bio, location, GitHub and website.",
         target: "edit-profile",
       },
       {
-        title: "Rank, badges and tasks",
-        body: "Your XP and tier, the badges you have unlocked, and your daily and weekly tasks.",
+        title: "Rank and tasks",
+        body: "Your XP and tier, badges, and daily and weekly tasks.",
         target: "rank-card",
       },
       {
         title: "Recent solves",
-        body: "The latest problems you got accepted, with their topic and difficulty. View all goes to the topic list.",
+        body: "Your latest accepted problems.",
         target: "recent-solves",
       },
       {
         title: "Security",
-        body: "Protect your account with two-factor sign-in, so a stolen password alone is not enough.",
+        body: "Add two-factor sign-in so a stolen password is not enough.",
         points: [
-          "Authenticator app: a code from an app on your phone",
-          "Email code: a one-time code sent to your inbox",
-          "Backup codes: one-time codes for when you lose access. Store them somewhere safe",
-          "You can switch your main method or turn it off here",
+          "Authenticator app or email codes",
+          "Backup codes if you lose access",
+          "Switch method or turn it off here",
         ],
         target: "security-card",
       },
       {
         title: "Streak",
-        body: "Your current and best streak of consecutive solving days.",
+        body: "Your current and best run of solving days.",
         target: "streak-card",
       },
       {
         title: "Contest stats",
-        body: "How you have done in contests. Press All to open your full contest history.",
+        body: "How you have done in contests. All opens your full history.",
         target: "contest-stats",
       },
     ],
@@ -500,33 +426,100 @@ export interface Box {
   height: number
 }
 
-export interface CardPlacement {
-  vertical: "top" | "bottom"
-  horizontal: "left" | "center" | "right"
+export interface Size {
+  width: number
+  height: number
 }
 
-/** Where to put the explanation card so it does not sit on top of the
- *  highlighted element. Phones always use a full-width sheet. With no target
- *  the card is centred on desktop and a bottom sheet on phones. */
-export function placeCard(
+export interface Point {
+  top: number
+  left: number
+}
+
+/** Width of the guide card: a fixed small card on wider screens, nearly full
+ *  width on phones. */
+export function cardWidth(viewportWidth: number): number {
+  return viewportWidth < 640 ? viewportWidth - 24 : 300
+}
+
+function overlapArea(a: Box, b: Box): number {
+  const w = Math.min(a.left + a.width, b.left + b.width) - Math.max(a.left, b.left)
+  const h = Math.min(a.top + a.height, b.top + b.height) - Math.max(a.top, b.top)
+  return w > 0 && h > 0 ? w * h : 0
+}
+
+/** Where to put the card so it does not cover the highlighted element.
+ *
+ *  Tries the spots next to the target (below, above, right, left) and then the
+ *  screen corners, keeps each one inside the viewport, and takes the first one
+ *  that overlaps the target least, so the card is only ever on top of what it
+ *  explains when there is genuinely no room (a target as big as the screen).
+ *  With no target the card is centred (a bottom sheet on phones). */
+export function placePopover(
   target: Box | null,
-  viewport: { width: number; height: number }
-): CardPlacement {
+  card: Size,
+  viewport: Size,
+  { gap = 14, margin = 12, pad = 6 }: { gap?: number; margin?: number; pad?: number } = {}
+): Point {
+  const maxLeft = Math.max(margin, viewport.width - card.width - margin)
+  const maxTop = Math.max(margin, viewport.height - card.height - margin)
+  const clamp = (p: Point): Point => ({
+    top: Math.min(Math.max(p.top, margin), maxTop),
+    left: Math.min(Math.max(p.left, margin), maxLeft),
+  })
   const phone = viewport.width < 640
-  if (!target) return { vertical: "bottom", horizontal: "center" }
 
-  const centerY = target.top + target.height / 2
-  const vertical = centerY < viewport.height / 2 ? "bottom" : "top"
-  if (phone) return { vertical, horizontal: "center" }
+  if (!target) {
+    return phone
+      ? clamp({ top: maxTop, left: (viewport.width - card.width) / 2 })
+      : clamp({
+          top: (viewport.height - card.height) / 2,
+          left: (viewport.width - card.width) / 2,
+        })
+  }
 
-  // A tall target (a whole panel) leaves no free band above or below it, so
-  // move the card to the opposite side horizontally instead.
-  if (target.height > viewport.height * 0.55) {
-    const centerX = target.left + target.width / 2
-    return {
-      vertical: "bottom",
-      horizontal: centerX < viewport.width / 2 ? "right" : "left",
+  // The area to keep clear: the target plus the spotlight ring around it.
+  const area: Box = {
+    top: target.top - pad,
+    left: target.left - pad,
+    width: target.width + pad * 2,
+    height: target.height + pad * 2,
+  }
+  const centerX = target.left + target.width / 2 - card.width / 2
+  const centerY = target.top + target.height / 2 - card.height / 2
+  const below = area.top + area.height + gap
+  const above = area.top - gap - card.height
+  const right = area.left + area.width + gap
+  const leftOf = area.left - gap - card.width
+
+  const candidates: Point[] = phone
+    ? [
+        { top: below, left: margin },
+        { top: above, left: margin },
+        { top: maxTop, left: margin },
+        { top: margin, left: margin },
+      ]
+    : [
+        { top: below, left: centerX },
+        { top: above, left: centerX },
+        { top: centerY, left: right },
+        { top: centerY, left: leftOf },
+        { top: maxTop, left: maxLeft },
+        { top: maxTop, left: margin },
+        { top: margin, left: maxLeft },
+        { top: margin, left: margin },
+      ]
+
+  let best: Point | null = null
+  let bestOverlap = Infinity
+  for (const raw of candidates) {
+    const p = clamp(raw)
+    const overlap = overlapArea({ ...p, width: card.width, height: card.height }, area)
+    if (overlap < bestOverlap) {
+      best = p
+      bestOverlap = overlap
+      if (overlap === 0) break
     }
   }
-  return { vertical, horizontal: "center" }
+  return best ?? clamp({ top: margin, left: margin })
 }

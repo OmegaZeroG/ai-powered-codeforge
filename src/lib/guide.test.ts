@@ -5,7 +5,9 @@ import {
   GUIDES,
   guideIdForPath,
   guideStorageKey,
-  placeCard,
+  placePopover,
+  cardWidth,
+  type Box,
   type GuideId,
 } from "./guide"
 
@@ -96,30 +98,90 @@ describe("guideStorageKey", () => {
   })
 })
 
-describe("placeCard", () => {
+describe("placePopover", () => {
   const desktop = { width: 1280, height: 800 }
   const phone = { width: 375, height: 812 }
+  const card = { width: 300, height: 180 }
+  const pad = 6
 
-  it("centres the card when nothing is highlighted", () => {
-    expect(placeCard(null, desktop)).toEqual({ vertical: "bottom", horizontal: "center" })
+  const overlaps = (p: { top: number; left: number }, t: Box, size = card) => {
+    const a = { top: t.top - pad, left: t.left - pad, width: t.width + pad * 2, height: t.height + pad * 2 }
+    return (
+      Math.min(p.left + size.width, a.left + a.width) > Math.max(p.left, a.left) &&
+      Math.min(p.top + size.height, a.top + a.height) > Math.max(p.top, a.top)
+    )
+  }
+  const inside = (p: { top: number; left: number }, vp = desktop, size = card) =>
+    p.left >= 0 && p.top >= 0 && p.left + size.width <= vp.width && p.top + size.height <= vp.height
+
+  it("centres the card when nothing is highlighted, and sheets it on phones", () => {
+    const c = placePopover(null, card, desktop)
+    expect(c.left).toBe((desktop.width - card.width) / 2)
+    expect(c.top).toBe((desktop.height - card.height) / 2)
+    const p = placePopover(null, { width: 351, height: 200 }, phone)
+    expect(p.top + 200).toBeLessThanOrEqual(phone.height)
+    expect(p.top).toBeGreaterThan(phone.height / 2)
   })
 
-  it("puts the card away from the highlighted element vertically", () => {
-    const top = { top: 20, left: 100, width: 400, height: 60 }
-    const bottom = { top: 700, left: 100, width: 400, height: 60 }
-    expect(placeCard(top, desktop).vertical).toBe("bottom")
-    expect(placeCard(bottom, desktop).vertical).toBe("top")
+  it("puts the card below a target near the top", () => {
+    const t = { top: 60, left: 500, width: 200, height: 40 }
+    const p = placePopover(t, card, desktop)
+    expect(p.top).toBeGreaterThan(t.top + t.height)
+    expect(overlaps(p, t)).toBe(false)
   })
 
-  it("moves the card sideways when the target is a tall panel", () => {
-    const leftPanel = { top: 56, left: 0, width: 420, height: 740 }
-    const rightPanel = { top: 56, left: 860, width: 420, height: 740 }
-    expect(placeCard(leftPanel, desktop).horizontal).toBe("right")
-    expect(placeCard(rightPanel, desktop).horizontal).toBe("left")
+  it("puts the card above a target near the bottom", () => {
+    const t = { top: 700, left: 500, width: 200, height: 40 }
+    const p = placePopover(t, card, desktop)
+    expect(p.top + card.height).toBeLessThan(t.top)
+    expect(overlaps(p, t)).toBe(false)
   })
 
-  it("always uses a full-width sheet on phones", () => {
-    const tall = { top: 56, left: 0, width: 375, height: 700 }
-    expect(placeCard(tall, phone).horizontal).toBe("center")
+  it("moves beside a tall panel instead of over it", () => {
+    const left = { top: 56, left: 0, width: 420, height: 740 }
+    const right = { top: 56, left: 860, width: 420, height: 740 }
+    const pl = placePopover(left, card, desktop)
+    const pr = placePopover(right, card, desktop)
+    expect(pl.left).toBeGreaterThanOrEqual(left.width)
+    expect(pr.left + card.width).toBeLessThanOrEqual(right.left)
+    expect(overlaps(pl, left)).toBe(false)
+    expect(overlaps(pr, right)).toBe(false)
+  })
+
+  it("never covers the target when there is room, wherever it is", () => {
+    const sizes = [
+      { width: 120, height: 36 },
+      { width: 400, height: 90 },
+      { width: 300, height: 300 },
+      { width: 612, height: 235 },
+    ]
+    for (const s of sizes) {
+      for (let top = 0; top <= desktop.height - s.height; top += 90) {
+        for (let left = 0; left <= desktop.width - s.width; left += 160) {
+          const t = { top, left, ...s }
+          const p = placePopover(t, card, desktop)
+          expect(overlaps(p, t), JSON.stringify(t)).toBe(false)
+          expect(inside(p), JSON.stringify(t)).toBe(true)
+        }
+      }
+    }
+  })
+
+  it("uses a full-width card above or below the target on phones", () => {
+    const w = cardWidth(phone.width)
+    expect(w).toBe(phone.width - 24)
+    const size = { width: w, height: 220 }
+    const nearTop = { top: 80, left: 20, width: 335, height: 60 }
+    const nearBottom = { top: 700, left: 20, width: 335, height: 60 }
+    const a = placePopover(nearTop, size, phone)
+    const b = placePopover(nearBottom, size, phone)
+    expect(overlaps(a, nearTop, size)).toBe(false)
+    expect(overlaps(b, nearBottom, size)).toBe(false)
+    expect(inside(a, phone, size) && inside(b, phone, size)).toBe(true)
+  })
+
+  it("keeps the card on screen even for a target as big as the screen", () => {
+    const huge = { top: 0, left: 0, width: 1280, height: 800 }
+    expect(inside(placePopover(huge, card, desktop))).toBe(true)
   })
 })

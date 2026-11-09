@@ -7,6 +7,7 @@ import { useSession, signOut } from "next-auth/react"
 import { motion, AnimatePresence } from "motion/react"
 import { Terminal, LogOut, ShieldCheck, Menu, X } from "lucide-react"
 import { NotificationBell } from "@/components/NotificationBell"
+import { GuideButton } from "@/components/guide/GuideButton"
 
 /* ---------------------------------------------------------------------------
    ProductNav — the in-app top bar for logged-in pages (Topics, Profile, …).
@@ -91,6 +92,8 @@ export function ProductNav() {
               Admin Control
             </Link>
           ) : null}
+
+          <GuideButton />
         </div>
 
         <div className="flex items-center gap-2">
@@ -155,6 +158,8 @@ export function ProductNav() {
                 Admin Control
               </Link>
             ) : null}
+
+            <GuideButton variant="menu" onOpen={() => setMenuOpen(false)} />
 
             <button
               onClick={() => signOut({ callbackUrl: "/" })}

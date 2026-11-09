@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { JetBrains_Mono, Inter, Instrument_Serif } from "next/font/google";
 import { SessionProvider } from "@/components/SessionProvider";
 import { ToastProvider } from "@/components/ui/toast";
+import { GuideProvider } from "@/components/guide/GuideProvider";
 import { SITE } from "@/lib/site";
 import "./globals.css";
 
@@ -63,7 +64,9 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <SessionProvider>
-          <ToastProvider>{children}</ToastProvider>
+          <ToastProvider>
+            <GuideProvider>{children}</GuideProvider>
+          </ToastProvider>
         </SessionProvider>
       </body>
     </html>

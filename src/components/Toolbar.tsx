@@ -7,6 +7,7 @@ import { useEditorStore } from "@/stores/editorStore"
 import { useAIStore } from "@/stores/aiStore"
 import { Language } from "@/types"
 import { NotificationBell } from "@/components/NotificationBell"
+import { GuideButton } from "@/components/guide/GuideButton"
 import {
   writeDraft,
   readSaveMode,
@@ -301,6 +302,8 @@ export function Toolbar() {
           {copied ? <Check size={14} /> : <Share2 size={14} />}
           <span className="hidden sm:inline">{copied ? "Copied" : "Share"}</span>
         </button>
+
+        <GuideButton variant="toolbar" />
 
         {/* Session info + logout */}
         {status === "authenticated" && session?.user && (

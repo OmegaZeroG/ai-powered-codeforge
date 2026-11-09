@@ -89,6 +89,7 @@ export default async function ContestsPage() {
             </p>
           </header>
 
+          <div data-guide="contest-list">
           {live.length > 0 ? (
             <section className="mb-8 space-y-3">
               <h2 className="text-sm font-medium text-muted-foreground">
@@ -125,6 +126,7 @@ export default async function ContestsPage() {
               ))}
             </section>
           ) : null}
+          </div>
 
           {!hasAny ? (
             <div className="rounded-2xl border border-border/70 bg-card/60 p-8 text-center backdrop-blur-sm">

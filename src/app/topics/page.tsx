@@ -169,7 +169,7 @@ export default async function TopicsPage() {
       </p>
 
       {skill && (
-        <div className="mb-4">
+        <div className="mb-4" data-guide="calibration">
           <Calibration skill={skill} />
         </div>
       )}
@@ -177,6 +177,7 @@ export default async function TopicsPage() {
       {recommendation && (
         <Link
           href={`/problems/${recommendation.slug}`}
+          data-guide="recommended"
           className="mb-6 block rounded-2xl border border-primary/50 bg-primary/10 p-4 backdrop-blur-sm transition-colors hover:border-primary"
         >
           <div className="mb-2 flex items-center gap-2">
@@ -199,7 +200,7 @@ export default async function TopicsPage() {
         </Link>
       )}
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3" data-guide="topics-list">
         {topics.map((topic) => {
           const solvedCount = topic.problems.filter((p) =>
             solvedByProblemId.has(p.id)
@@ -269,9 +270,11 @@ export default async function TopicsPage() {
               {/* LEFT rail — rank, badges, tasks. Ordered after the topics list on
                   mobile so the primary content isn't buried below widgets. */}
               <aside className="order-2 space-y-6 lg:order-none lg:sticky lg:top-24 lg:self-start">
-                <RankCard rank={game.rank} />
-                <BadgesCard badges={game.badges} />
-                <TasksCard daily={game.tasks.daily} weekly={game.tasks.weekly} />
+                <div data-guide="rank-card"><RankCard rank={game.rank} /></div>
+                <div data-guide="tasks-card" className="space-y-6">
+                  <BadgesCard badges={game.badges} />
+                  <TasksCard daily={game.tasks.daily} weekly={game.tasks.weekly} />
+                </div>
               </aside>
 
               {/* CENTER — topics */}
@@ -279,8 +282,8 @@ export default async function TopicsPage() {
 
               {/* RIGHT rail — calendar, streak */}
               <aside className="order-3 space-y-6 lg:order-none lg:sticky lg:top-24 lg:self-start">
-                <SolveCalendar solvedDays={game.solvedDays} />
-                <StreakCard streak={game.streak} bestStreak={game.bestStreak} />
+                <div data-guide="solve-calendar"><SolveCalendar solvedDays={game.solvedDays} /></div>
+                <div data-guide="streak-card"><StreakCard streak={game.streak} bestStreak={game.bestStreak} /></div>
               </aside>
             </div>
           ) : (

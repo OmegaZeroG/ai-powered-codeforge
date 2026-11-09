@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma"
-import { runCode } from "@/lib/piston"
+import { evaluateTestCase } from "@/lib/judge-run"
 import { syncBadges } from "@/lib/gamification"
 import { Prisma, Verdict } from "@prisma/client"
 import type { TestCaseResult } from "@/types"
@@ -67,58 +67,14 @@ export async function judgeSubmission(submissionId: string): Promise<JudgeOutcom
 
   try {
     for (const testCase of problem.testCases) {
-      const result = await runCode(submission.language, submission.code, testCase.input)
-
-      if (result.compile && result.compile.code !== 0) {
-        verdict = "COMPILE_ERROR"
-        testResults.push({
-          input: testCase.input,
-          expected: testCase.expected,
-          actual: result.compile.stderr,
-          passed: false,
-          isSample: testCase.isSample,
-        })
-        break
-      }
-
-      if (result.run.signal === "SIGKILL") {
-        verdict = "TIME_LIMIT_EXCEEDED"
-        testResults.push({
-          input: testCase.input,
-          expected: testCase.expected,
-          actual: "Time limit exceeded",
-          passed: false,
-          isSample: testCase.isSample,
-        })
-        break
-      }
-
-      if (result.run.code !== 0) {
-        verdict = "RUNTIME_ERROR"
-        testResults.push({
-          input: testCase.input,
-          expected: testCase.expected,
-          actual: result.run.stderr || "Runtime error",
-          passed: false,
-          isSample: testCase.isSample,
-        })
-        break
-      }
-
-      const actual = result.run.stdout.trim()
-      const expected = testCase.expected.trim()
-      const passed = actual === expected
-
-      testResults.push({
-        input: testCase.input,
-        expected: testCase.expected,
-        actual,
-        passed,
-        isSample: testCase.isSample,
-      })
-
-      if (!passed) {
-        verdict = "WRONG_ANSWER"
+      const { verdict: caseVerdict, result } = await evaluateTestCase(
+        submission.language,
+        submission.code,
+        testCase
+      )
+      testResults.push(result)
+      if (caseVerdict !== "ACCEPTED") {
+        verdict = caseVerdict
         break
       }
     }

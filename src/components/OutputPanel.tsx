@@ -7,13 +7,14 @@ import { useEditorStore } from "@/stores/editorStore"
 import { useAIStore } from "@/stores/aiStore"
 import {
   Play,
+  Send,
   Trash2,
   Sparkles,
   CheckCircle2,
   XCircle,
   Terminal,
 } from "lucide-react"
-import { EnqueueResponse, RunResponse } from "@/types"
+import { EnqueueResponse, RunResponse, SubmitResponse } from "@/types"
 import { writeDraft } from "@/lib/draft"
 import { pollSubmission } from "@/lib/poll"
 import {
@@ -45,6 +46,57 @@ export function OutputPanel() {
   const [runOutput, setRunOutput] = useState<RunResponse | null>(null)
   const [runError, setRunError] = useState<string | null>(null)
   const isScratchpad = !problemId
+  // Result of the Run button (sample tests only). Kept separate from the shared
+  // store result on purpose: a passing Run must not look like an accepted
+  // submission to the AI tutor, nor replace the stamp of a real submission.
+  const [runResult, setRunResult] = useState<SubmitResponse | null>(null)
+  const shown = runResult ?? result
+  const isSampleRun = runResult !== null
+
+  // Run: execute against the SAMPLE test cases only. Synchronous, no queue, and
+  // records nothing -- no submission, XP, streak or progress change.
+  const handleRunSamples = async () => {
+    if (!problemId || !code.trim()) return
+    if (saveMode === "submit") {
+      writeDraft(session?.user?.id, problemId, language, code, problemStarterCode?.[language])
+    }
+    setIsRunning(true)
+    setResult(null)
+    setRunResult(null)
+    setStatusText("Running sample tests...")
+    try {
+      const res = await fetch("/api/run-samples", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ problemId, code, language }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || "Run failed")
+      const outcome = data as SubmitResponse
+      setRunResult(outcome)
+      // Only a failing run is shared with the AI panel (so it can see the
+      // failing sample); a pass stays local to avoid reading as accepted.
+      if (outcome.verdict !== "ACCEPTED") setResult(outcome)
+    } catch (error) {
+      setRunResult({
+        status: "ERROR",
+        verdict: "RUNTIME_ERROR",
+        testResults: [
+          {
+            input: "",
+            expected: "",
+            actual: error instanceof Error ? error.message : "Run failed",
+            passed: false,
+            isSample: false,
+          },
+        ],
+        runtimeMs: null,
+      })
+    } finally {
+      setIsRunning(false)
+      setStatusText(null)
+    }
+  }
 
   const handleRun = async () => {
     if (!problemId) return
@@ -56,6 +108,7 @@ export function OutputPanel() {
     }
     setIsRunning(true)
     setResult(null)
+    setRunResult(null)
     setStatusText("Queued...")
     try {
       // Enqueue the submission; the route returns immediately with an id.
@@ -139,6 +192,7 @@ export function OutputPanel() {
       setRunError(null)
     } else {
       clearResult()
+      setRunResult(null)
     }
   }
 
@@ -152,10 +206,10 @@ export function OutputPanel() {
           runOutput.stderr.trim() !== "")))
 
   const hasFailure =
-    result && result.verdict !== "PENDING" && result.verdict !== "ACCEPTED"
+    shown && shown.verdict !== "PENDING" && shown.verdict !== "ACCEPTED"
 
   return (
-    <div className="h-full bg-ink-deep flex flex-col">
+    <div className="h-full bg-ink-deep flex flex-col" data-guide="output-panel">
       {/* Header */}
       <div className="h-10 border-t border-edge flex items-center justify-between px-4">
         <div className="flex items-center gap-2">
@@ -163,7 +217,14 @@ export function OutputPanel() {
           <span className="text-fg-muted text-xs font-medium uppercase tracking-[0.15em]">
             Output
           </span>
-          {result && <VerdictStamp verdict={result.verdict} />}
+          {shown && isSampleRun && (
+            <span className="rounded border border-edge bg-raised px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-fg-muted">
+              Sample run
+            </span>
+          )}
+          {shown && (shown.verdict !== "ACCEPTED" || !isSampleRun) && (
+            <VerdictStamp verdict={shown.verdict} />
+          )}
         </div>
         <div className="flex items-center gap-2">
           {(hasFailure || scratchHasError) && (
@@ -183,20 +244,48 @@ export function OutputPanel() {
           >
             <Trash2 size={14} />
           </button>
-          <button
-            onClick={isScratchpad ? handleScratchRun : handleRun}
-            disabled={isRunning || (isScratchpad ? !code.trim() : !problemId)}
-            className="flex items-center gap-2 text-sm px-4 py-1.5 rounded-lg bg-brand hover:bg-brand-bright text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Play size={14} />
-            {isRunning ? "Running..." : isScratchpad ? "Run" : "Submit"}
-          </button>
+          {isScratchpad ? (
+            <button
+              onClick={handleScratchRun}
+              data-guide="run-btn"
+              disabled={isRunning || !code.trim()}
+              className="flex items-center gap-2 text-sm px-4 py-1.5 rounded-lg bg-brand hover:bg-brand-bright text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Play size={14} />
+              {isRunning ? "Running..." : "Run"}
+            </button>
+          ) : (
+            <>
+              {/* Run: sample tests only, instant, records nothing. */}
+              <button
+                onClick={handleRunSamples}
+                data-guide="run-btn"
+                disabled={isRunning || !problemId || !code.trim()}
+                title="Run on the sample test cases only. Nothing is recorded."
+                className="flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg border border-edge bg-raised text-fg hover:bg-raised-bright transition-colors disabled:opacity-50 disabled:cursor-not-allowed sm:px-4"
+              >
+                <Play size={14} />
+                Run
+              </button>
+              {/* Submit: judged against every test case, hidden ones included. */}
+              <button
+                onClick={handleRun}
+                data-guide="submit-btn"
+                disabled={isRunning || !problemId}
+                title="Submit for judging against all test cases, including hidden ones."
+                className="flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg bg-brand hover:bg-brand-bright text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed sm:px-4"
+              >
+                <Send size={14} />
+                Submit
+              </button>
+            </>
+          )}
         </div>
       </div>
 
       {/* Scratchpad: stdin box (no problem loaded) */}
       {isScratchpad && (
-        <div className="shrink-0 px-4 pt-3">
+        <div className="shrink-0 px-4 pt-3" data-guide="stdin-box">
           <label className="block text-[10px] font-medium uppercase tracking-[0.15em] text-fg-faint mb-1.5">
             Standard input (stdin)
           </label>
@@ -280,10 +369,10 @@ export function OutputPanel() {
           </>
         ) : (
         <>
-        {!result && !isRunning && (
+        {!shown && !isRunning && (
           <p className="text-fg-faint">
             {problemId
-              ? "Press Submit to run your code against the test cases..."
+              ? "Press Run to try the sample test cases, or Submit to judge against all test cases, hidden ones included."
               : "Select a problem to start solving."}
           </p>
         )}
@@ -292,26 +381,39 @@ export function OutputPanel() {
             {statusText ?? "Running test cases..."}
           </p>
         )}
-        {result && (
+        {shown && (
           <div className="space-y-3">
+            {/* A passing Run is NOT an accepted submission: say so plainly. */}
+            {isSampleRun && shown.verdict === "ACCEPTED" && (
+              <div className="flex items-start gap-2 rounded-md border border-ac/40 bg-ac/5 p-3">
+                <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-ac" />
+                <p className="text-xs text-fg-dim">
+                  All {shown.testResults.length} sample test case
+                  {shown.testResults.length === 1 ? "" : "s"} passed. This was
+                  only a trial run. Press Submit to judge against the hidden
+                  test cases too.
+                </p>
+              </div>
+            )}
             {/* The Accepted moment: the judge stamps the submission.
                 Re-mounts on every submit (result is cleared first), so the
                 thunk replays; reduced-motion pins the final frame. */}
-            {result.verdict === "ACCEPTED" && (
+            {!isSampleRun && shown.verdict === "ACCEPTED" && (
               <div className="py-3 flex justify-center">
                 <AcceptedStamp
-                  passedCount={result.testResults.filter((t) => t.passed).length}
-                  totalCount={result.testResults.length}
-                  runtimeMs={result.runtimeMs}
+                  passedCount={shown.testResults.filter((t) => t.passed).length}
+                  totalCount={shown.testResults.length}
+                  runtimeMs={shown.runtimeMs}
                 />
               </div>
             )}
-            {result.verdict !== "ACCEPTED" &&
-              result.verdict !== "PENDING" &&
-              result.testResults.every((t) => t.passed) && (
-                <HiddenTestFailureNote verdict={result.verdict} />
+            {!isSampleRun &&
+              shown.verdict !== "ACCEPTED" &&
+              shown.verdict !== "PENDING" &&
+              shown.testResults.every((t) => t.passed) && (
+                <HiddenTestFailureNote verdict={shown.verdict} />
               )}
-            {result.testResults.map((test, i) => (
+            {shown.testResults.map((test, i) => (
               <div
                 key={i}
                 className="border border-edge rounded-md p-3"
@@ -355,9 +457,9 @@ export function OutputPanel() {
                 )}
               </div>
             ))}
-            {result.runtimeMs !== null && (
+            {shown.runtimeMs !== null && (
               <p className="text-[#55556A] text-xs">
-                Runtime: {result.runtimeMs}ms
+                Runtime: {shown.runtimeMs}ms
               </p>
             )}
           </div>

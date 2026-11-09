@@ -85,7 +85,7 @@ export default async function ContestHistoryPage() {
               </section>
 
               {/* History table */}
-              <div className="overflow-hidden rounded-2xl border border-border/70 bg-card/60 backdrop-blur-sm">
+              <div data-guide="history-table" className="overflow-hidden rounded-2xl border border-border/70 bg-card/60 backdrop-blur-sm">
                 <div className="overflow-x-auto">
                 <table className="w-full min-w-[480px] text-sm sm:min-w-0">
                   <thead>

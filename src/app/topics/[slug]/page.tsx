@@ -137,6 +137,7 @@ export default async function TopicPage({
         <main className="mx-auto max-w-3xl px-6 py-10">
           <Link
             href="/topics"
+            data-guide="topic-back"
             className="text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
             ← All topics
@@ -150,7 +151,7 @@ export default async function TopicPage({
             </p>
           )}
 
-          <section className="flex flex-col gap-3">
+          <section className="flex flex-col gap-3" data-guide="topic-problems">
             {orderedProblems.map((problem) => {
               const status = statusByProblemId.get(problem.id) ?? "NOT_STARTED"
               const isBestMatch = problem.id === bestMatchId

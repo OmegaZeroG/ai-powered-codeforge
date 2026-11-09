@@ -132,6 +132,7 @@ export function Toolbar() {
 
         {/* Language selector */}
         <select
+          data-guide="language-select"
           value={language}
           onChange={(e) => setLanguage(e.target.value as Language)}
           className="bg-raised text-fg text-sm border border-edge rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-brand cursor-pointer sm:px-3.5"
@@ -182,6 +183,7 @@ export function Toolbar() {
         {/* AI toggle pill — sparkles + label + on/off switch */}
         <button
           onClick={togglePanel}
+          data-guide="ai-toggle"
           aria-pressed={isPanelOpen}
           className={`flex items-center gap-2 text-sm px-2.5 py-1.5 rounded-lg border transition-colors sm:px-3.5 ${
             isPanelOpen
@@ -207,7 +209,7 @@ export function Toolbar() {
 
         {/* Save split-button: click to save now, chevron to pick when drafts
             persist automatically. The active mode shows as a small badge. */}
-        <div className="relative flex items-center" ref={menuRef}>
+        <div className="relative flex items-center" ref={menuRef} data-guide="save-btn">
           <button
             onClick={handleSave}
             className={`flex items-center gap-2 text-sm pl-2.5 pr-2 py-1.5 rounded-l-lg border transition-colors sm:pl-3.5 sm:pr-3 ${
@@ -292,6 +294,7 @@ export function Toolbar() {
 
         <button
           onClick={handleShare}
+          data-guide="share-btn"
           className={`flex items-center gap-2 text-sm px-2.5 py-1.5 rounded-lg border transition-colors sm:px-3.5 ${
             copied
               ? "border-ac/50 bg-ac/10 text-ac"

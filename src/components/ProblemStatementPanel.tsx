@@ -25,6 +25,7 @@ export function ProblemStatementPanel({ children }: { children: ReactNode }) {
   return (
     <>
       <div
+        data-guide="statement"
         style={isDesktop ? { width: statement.size } : undefined}
         className="w-full max-h-[40vh] shrink-0 overflow-auto border-b border-edge px-4 py-5 min-h-0 sm:px-6 sm:py-6 md:max-h-none md:w-auto md:border-b-0 md:border-r"
       >

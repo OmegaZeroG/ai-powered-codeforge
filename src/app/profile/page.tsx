@@ -133,9 +133,11 @@ export default async function ProfilePage() {
             {/* LEFT rail — ordered after the profile content on mobile so
                 identity/stats aren't buried below widgets. */}
             <aside className="order-2 space-y-6 lg:order-none lg:sticky lg:top-24 lg:self-start">
-              <RankCard rank={game.rank} />
-              <BadgesCard badges={game.badges} />
-              <TasksCard daily={game.tasks.daily} weekly={game.tasks.weekly} />
+              <div data-guide="rank-card"><RankCard rank={game.rank} /></div>
+              <div className="space-y-6">
+                <BadgesCard badges={game.badges} />
+                <TasksCard daily={game.tasks.daily} weekly={game.tasks.weekly} />
+              </div>
             </aside>
 
             {/* CENTER */}
@@ -149,7 +151,7 @@ export default async function ProfilePage() {
                 />
               ) : null}
               {/* Identity */}
-              <section className="rounded-2xl border border-border/70 bg-card/60 p-6 backdrop-blur-sm">
+              <section data-guide="profile-header" className="rounded-2xl border border-border/70 bg-card/60 p-6 backdrop-blur-sm">
                 <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
                   <div className="flex items-center gap-4">
                     <div className="relative">
@@ -212,6 +214,7 @@ export default async function ProfilePage() {
                       </div>
                     </div>
                   </div>
+                  <div data-guide="edit-profile" className="self-start">
                   <EditProfileDialog
                     initial={{
                       name: user?.name ?? "",
@@ -222,6 +225,7 @@ export default async function ProfilePage() {
                       website: user?.website ?? "",
                     }}
                   />
+                  </div>
                 </div>
               </section>
 
@@ -287,9 +291,10 @@ export default async function ProfilePage() {
               </section>
 
               {/* Recent solves */}
-              <RecentSolvesCard solves={game.recentSolves} />
+              <div data-guide="recent-solves"><RecentSolvesCard solves={game.recentSolves} /></div>
 
               {/* Account security */}
+              <div data-guide="security-card">
               <SecurityCard
                 initialEmailEnabled={user?.twoFactorEmailEnabled ?? false}
                 initialTotpEnabled={user?.twoFactorTotpEnabled ?? false}
@@ -297,13 +302,14 @@ export default async function ProfilePage() {
                 initialBackupCount={user?._count?.twoFactorBackupCodes ?? 0}
                 isPasswordAccount={Boolean(user?.password)}
               />
+              </div>
             </div>
 
             {/* RIGHT rail */}
             <aside className="order-3 space-y-6 lg:order-none lg:sticky lg:top-24 lg:self-start">
               <SolveCalendar solvedDays={game.solvedDays} />
-              <StreakCard streak={game.streak} bestStreak={game.bestStreak} />
-              <ContestStatsCard stats={contestStats} />
+              <div data-guide="streak-card"><StreakCard streak={game.streak} bestStreak={game.bestStreak} /></div>
+              <div data-guide="contest-stats"><ContestStatsCard stats={contestStats} /></div>
             </aside>
           </div>
 

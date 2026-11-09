@@ -39,7 +39,7 @@ export function ProductNav() {
 
   return (
     <header className="sticky top-0 z-40 px-4 pt-4">
-      <nav className="mx-auto flex max-w-6xl items-center justify-between rounded-full border border-border/70 bg-background/70 px-5 py-2.5 backdrop-blur-xl">
+      <nav data-guide="product-nav" className="mx-auto flex max-w-6xl items-center justify-between rounded-full border border-border/70 bg-background/70 px-5 py-2.5 backdrop-blur-xl">
         <Link
           href="/"
           className="flex items-center gap-2 transition-opacity hover:opacity-80"

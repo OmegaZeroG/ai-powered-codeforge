@@ -51,6 +51,10 @@ export function Toolbar() {
   const [copied, setCopied] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  // The toolbar scrolls horizontally on narrow screens, which makes browsers
+  // clip anything hanging below it. So the menu is position:fixed, placed from
+  // the button's on-screen box, and never clipped or hidden behind the editor.
+  const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(null)
 
   // Hydrate the persisted save-mode preference on mount (localStorage isn't
   // available when the store initializes during SSR).
@@ -70,13 +74,28 @@ export function Toolbar() {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setMenuOpen(false)
     }
+    // A fixed menu would drift away from its button if the page or toolbar
+    // moved underneath it, so close it instead.
+    const onMove = () => setMenuOpen(false)
     document.addEventListener("mousedown", onDown)
     document.addEventListener("keydown", onKey)
+    window.addEventListener("resize", onMove)
+    window.addEventListener("scroll", onMove, true)
     return () => {
       document.removeEventListener("mousedown", onDown)
       document.removeEventListener("keydown", onKey)
+      window.removeEventListener("resize", onMove)
+      window.removeEventListener("scroll", onMove, true)
     }
   }, [menuOpen])
+
+  const toggleMenu = () => {
+    if (!menuOpen && menuRef.current) {
+      const r = menuRef.current.getBoundingClientRect()
+      setMenuPos({ top: r.bottom + 6, right: window.innerWidth - r.right })
+    }
+    setMenuOpen((o) => !o)
+  }
 
   const handleSave = () => {
     if (writeDraft(session?.user?.id, problemId, language, code)) {
@@ -228,7 +247,7 @@ export function Toolbar() {
             )}
           </button>
           <button
-            onClick={() => setMenuOpen((o) => !o)}
+            onClick={toggleMenu}
             aria-haspopup="menu"
             aria-expanded={menuOpen}
             className={`flex items-center px-1.5 py-1.5 rounded-r-lg border border-l-0 transition-colors ${
@@ -244,10 +263,11 @@ export function Toolbar() {
             />
           </button>
 
-          {menuOpen && (
+          {menuOpen && menuPos && (
             <div
               role="menu"
-              className="absolute right-0 top-full z-50 mt-1.5 w-64 overflow-hidden rounded-xl border border-edge bg-ink shadow-xl"
+              style={{ top: menuPos.top, right: menuPos.right }}
+              className="fixed z-[60] w-64 overflow-hidden rounded-xl border border-edge bg-ink shadow-xl"
             >
               <div className="px-3 py-2 text-[10px] font-medium uppercase tracking-wide text-fg-muted border-b border-edge">
                 Save timing
